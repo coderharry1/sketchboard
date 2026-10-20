@@ -74,53 +74,6 @@ It was built by **reverse engineering a best-in-class product** ([Excalidraw](ht
 
 ---
 
-## How it was built
-
-### 1. Reverse engineering the reference product
-
-REA (Reverse Engineer Anything) loaded excalidraw.com in a controlled browser session, captured its network responses, and exported its shipped JavaScript for analysis. Findings:
-
-| Area | What the reference uses | Decision for Sketchboard |
-|---|---|---|
-| UI framework | React 19 + Vite, 2.2 MB main script | **No framework.** Vanilla JavaScript in one file (204 KB total, fonts included). |
-| Rendering | Canvas 2D with static + interactive layers; rough.js for the hand-drawn look | **Same core:** Canvas 2D + rough.js, single layer with cached shapes. |
-| Data model | Elements with style fields, version/seed, `startBinding`/`endBinding` | **Same schema**, so files are interchangeable. |
-| Persistence | localStorage + IndexedDB; `.excalidraw` JSON; File System Access API | **Same approach:** autosave to localStorage, native Save dialog where supported, download fallback elsewhere. |
-| Design tokens | Primary `#6965db`, 12-hue × 5-shade palette, island panels | **Matched**, so the product feels familiar. |
-| Extras | Collaboration (Firebase), analytics, error tracking, AI features | **Deliberately excluded:** no servers, no tracking, smaller surface. |
-
-The open-source Excalidraw code (MIT) was then read for exact behaviors such as arrow binding gaps, corner radii and the file format.
-
-### 2. Architecture
-
-```mermaid
-flowchart LR
-  subgraph Browser["User's browser — everything runs here"]
-    Input["Pointer & keyboard"] --> Model["Scene model<br/>(elements, bindings, history)"]
-    Model --> Render["rough.js renderer<br/>→ Canvas 2D"]
-    Model --> Local["Autosave<br/>(localStorage)"]
-    Model <--> Files[".excalidraw files<br/>(Save / Open / drag-drop)"]
-    SW["Service worker"] -. offline cache .- Browser
-  end
-```
-
-```mermaid
-flowchart LR
-  Src["src/index.html"] --> Build["build.py<br/>inlines rough.js + font"] --> App["index.html<br/>single file"]
-  App --> Push["git push"] --> CI["GitHub Actions<br/>build check + 9 browser tests"] --> CD["Deploy to<br/>GitHub Pages"] --> Live["coderharry1.github.io/sketchboard"]
-```
-
-### 3. Quality and delivery (CI/CD)
-
-Every push and pull request runs the **CI/CD** workflow ([`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml)):
-
-1. **Build integrity** — rebuilds the app from source and fails if the committed `index.html` is out of date.
-2. **End-to-end tests** — a real Chromium browser runs [9 user-journey tests](tests/app.spec.js):
-   loads with credit · draws and connects boxes · arrows follow moved boxes · outline/fill colors · labels · undo/redo · autosave survives reload · Save produces a valid `.excalidraw` file that opens again · installable app (manifest + service worker).
-3. **Continuous deployment** — only if every test passes on `main`, the site is published to GitHub Pages. A failing change never reaches users.
-
----
-
 ## Run it yourself
 
 **Just use it:** open https://coderharry1.github.io/sketchboard/ — or download [`Sketchboard.html`](Sketchboard.html) and double-click it (works offline).
