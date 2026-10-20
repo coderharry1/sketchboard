@@ -1,0 +1,2460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sketchboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: "Virgil";
+  src: url("https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.1/dist/prod/fonts/Virgil/Virgil-Regular.woff2") format("woff2");
+  font-display: swap;
+}
+:root {
+  --primary: #6965db;
+  --primary-darker: #5b57d1;
+  --primary-hover: #5753d0;
+  --primary-active: #4440bf;
+  --primary-container: #e0dfff;
+  --on-primary-container: #030064;
+  --island-bg: #ffffff;
+  --surface-high: #f1f0ff;
+  --surface-mid: #f6f6f9;
+  --surface-low: #ececf4;
+  --text: #1b1b1f;
+  --text-muted: #6e6e7a;
+  --icon: #3d3d45;
+  --divider: #e5e5ee;
+  --swatch-border: rgba(0, 0, 0, 0.12);
+  --checker-a: #e7e7ef;
+  --checker-b: #ffffff;
+  --shadow: 0 0 1px rgba(0, 0, 0, .17), 0 0 3px rgba(0, 0, 0, .08), 0 7px 14px rgba(0, 0, 0, .05);
+  --canvas-filter: none;
+  --page-bg: #ffffff;
+  --radius-lg: .5rem;
+  --radius-md: .375rem;
+  --hand-font: "Virgil", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  --ui-font: "Assistant", system-ui, BlinkMacSystemFont, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --primary: #a8a5ff;
+  --primary-darker: #b2aeff;
+  --primary-hover: #bbb8ff;
+  --primary-active: #c6c3ff;
+  --primary-container: #403e6a;
+  --on-primary-container: #e0dfff;
+  --island-bg: #232329;
+  --surface-high: #2e2d39;
+  --surface-mid: hsl(240 6% 10%);
+  --surface-low: hsl(240 8% 15%);
+  --text: #e3e3e8;
+  --text-muted: #9a9aa6;
+  --icon: #d4d4dc;
+  --divider: #34343e;
+  --swatch-border: rgba(255, 255, 255, 0.14);
+  --checker-a: #3a3a44;
+  --checker-b: #26262c;
+  --shadow: 0 0 1px rgba(0, 0, 0, .5), 0 0 3px rgba(0, 0, 0, .3), 0 7px 14px rgba(0, 0, 0, .25);
+  --canvas-filter: invert(93%) hue-rotate(180deg);
+  --page-bg: #121212;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: var(--page-bg); color: var(--text);
+  font-family: var(--ui-font); font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; }
+#canvas {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  touch-action: none; filter: var(--canvas-filter); outline: none;
+}
+#text-editor {
+  position: fixed; z-index: 2; margin: 0; padding: 0; border: 0; outline: 0;
+  resize: none; overflow: hidden; background: transparent;
+  font-family: var(--hand-font); line-height: 1.25;
+  filter: var(--canvas-filter); min-width: 1px;
+  word-break: break-word; overflow-wrap: break-word;
+}
+.ui { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
+.ui .island, .ui button, .ui input, .ui .menu-wrap { pointer-events: auto; }
+.island {
+  background: var(--island-bg); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow); padding: 4px;
+}
+svg { display: block; }
+
+/* toolbar */
+.toolbar {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 2px; max-width: calc(100% - 32px);
+  overflow-x: auto; scrollbar-width: none;
+}
+.toolbar::-webkit-scrollbar { display: none; }
+.tool {
+  position: relative; flex: none; width: 36px; height: 36px; border: 0; padding: 0;
+  border-radius: var(--radius-lg); background: transparent; color: var(--icon);
+  display: grid; place-items: center; cursor: pointer;
+}
+.tool svg { width: 18px; height: 18px; }
+.tool:hover { background: var(--surface-high); }
+.tool.active { background: var(--primary-container); color: var(--on-primary-container); }
+.tool .kbd {
+  position: absolute; right: 3px; bottom: 1px; font-size: 9px; line-height: 1;
+  color: var(--text-muted); font-weight: 600;
+}
+.tool.active .kbd { color: var(--on-primary-container); opacity: .7; }
+.sep { flex: none; width: 1px; height: 20px; background: var(--divider); margin: 0 4px; }
+
+#hint {
+  position: absolute; top: 66px; left: 50%; transform: translateX(-50%);
+  font-size: 12px; color: var(--text-muted); white-space: nowrap;
+  transition: opacity .2s;
+}
+kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px;
+  border: 1px solid var(--divider); border-radius: 4px; padding: 0 4px;
+  background: var(--surface-mid); color: var(--text);
+}
+
+/* top corners */
+.top-left { position: absolute; top: 16px; left: 16px; }
+.top-right { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; align-items: center; }
+.icon-btn {
+  width: 36px; height: 36px; border: 0; padding: 0; border-radius: var(--radius-lg);
+  background: var(--island-bg); box-shadow: var(--shadow); color: var(--icon);
+  display: grid; place-items: center; cursor: pointer;
+}
+.icon-btn svg { width: 18px; height: 18px; }
+.icon-btn:hover { background: var(--surface-high); }
+.icon-btn[aria-expanded="true"] { background: var(--primary-container); color: var(--on-primary-container); }
+.doc-name {
+  height: 36px; width: 190px; border: 0; border-radius: var(--radius-lg);
+  background: var(--island-bg); box-shadow: var(--shadow); color: var(--text);
+  padding: 0 12px; font: inherit; font-weight: 500;
+}
+.doc-name:focus { outline: 2px solid var(--primary); outline-offset: 0; }
+.primary-btn {
+  height: 36px; border: 0; border-radius: var(--radius-lg); padding: 0 14px 0 10px;
+  background: var(--primary); color: #fff; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; box-shadow: var(--shadow);
+}
+:root[data-theme="dark"] .primary-btn { color: #121212; }
+.primary-btn svg { width: 18px; height: 18px; }
+.primary-btn:hover { background: var(--primary-hover); }
+.primary-btn:active { background: var(--primary-active); }
+
+/* dropdown menu */
+.dropdown {
+  position: absolute; top: 44px; left: 0; width: 248px; padding: 8px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.dropdown[hidden] { display: none; }
+.menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 34px;
+  border: 0; background: transparent; border-radius: var(--radius-md);
+  padding: 0 8px; cursor: pointer; text-align: left; color: var(--text);
+}
+.menu-item svg { width: 16px; height: 16px; color: var(--icon); flex: none; }
+.menu-item:hover { background: var(--surface-high); }
+.menu-item .shortcut { margin-left: auto; font-size: 12px; color: var(--text-muted); }
+.menu-sep { height: 1px; background: var(--divider); margin: 6px 4px; }
+.menu-label { font-size: 12px; color: var(--text-muted); padding: 2px 8px 6px; }
+
+/* properties panel */
+.panel {
+  position: absolute; top: 72px; left: 16px; width: 212px; padding: 12px;
+  max-height: calc(100% - 150px); overflow-y: auto; scrollbar-width: thin;
+}
+.panel[hidden] { display: none; }
+.panel section[hidden] { display: none; }
+.panel section + section { margin-top: 12px; }
+.panel h3 { margin: 0 0 6px; font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.row-label { font-size: 11px; color: var(--text-muted); width: 34px; flex: none; }
+.opts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.opts + .opts { margin-top: 6px; }
+.opt {
+  width: 32px; height: 32px; border: 1px solid transparent; padding: 0;
+  border-radius: var(--radius-lg); background: var(--surface-low); color: var(--icon);
+  display: grid; place-items: center; cursor: pointer; font-size: 12px; font-weight: 600;
+}
+.opt svg { width: 18px; height: 18px; }
+.opt:hover { background: var(--surface-high); }
+.opt.active { background: var(--primary-container); border-color: var(--primary-darker); color: var(--on-primary-container); }
+.opt.mirror svg { transform: scaleX(-1); }
+.swatches { display: flex; align-items: center; gap: 4px; }
+.swatch {
+  position: relative; width: 26px; height: 26px; padding: 0; flex: none;
+  border-radius: 6px; border: 0; cursor: pointer; background: transparent;
+  outline-offset: 2px;
+}
+.swatch .fill {
+  position: absolute; inset: 0; border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--swatch-border); filter: var(--canvas-filter);
+}
+.swatch .fill.transparent, .checker {
+  background: repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 0 0 / 10px 10px;
+  filter: none;
+}
+.swatch:hover .fill { box-shadow: inset 0 0 0 1px var(--swatch-border), 0 0 0 1px var(--text-muted); }
+.swatch.active { outline: 1px solid var(--primary); }
+.swatch-sep { width: 1px; height: 20px; background: var(--divider); margin: 0 4px; }
+input[type="range"] { width: 100%; accent-color: var(--primary); margin: 4px 0 0; }
+.range-row { display: flex; align-items: center; gap: 8px; }
+.range-row output { font-size: 12px; color: var(--text-muted); width: 28px; text-align: right; }
+
+/* color popover */
+.popover { position: fixed; z-index: 10; width: 248px; padding: 12px; pointer-events: auto; }
+.popover[hidden] { display: none; }
+.popover h4 { margin: 0 0 8px; font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.palette-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.palette-grid .swatch { width: 100%; height: 28px; }
+.shades { display: flex; gap: 6px; margin-top: 10px; }
+.shades .swatch { flex: 1; height: 28px; width: auto; }
+.hex-row {
+  display: flex; align-items: center; margin-top: 12px; height: 32px;
+  border-radius: var(--radius-lg); background: var(--surface-low); padding: 0 8px; gap: 6px;
+}
+.hex-row span { color: var(--text-muted); }
+.hex-row input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font: inherit; outline: none; }
+.hex-row .preview { width: 18px; height: 18px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--swatch-border); filter: var(--canvas-filter); }
+
+/* footer */
+.footer-left { position: absolute; left: 16px; bottom: 16px; display: flex; gap: 8px; }
+.footer-right { position: absolute; right: 16px; bottom: 16px; display: flex; gap: 8px; align-items: center; }
+.group { display: flex; align-items: center; gap: 0; padding: 2px; }
+.group .tool { width: 34px; height: 32px; }
+.group .tool:disabled { opacity: .35; cursor: default; background: transparent; }
+.zoom-label {
+  min-width: 52px; height: 32px; border: 0; background: transparent; cursor: pointer;
+  border-radius: var(--radius-lg); font-size: 13px; color: var(--text);
+}
+.zoom-label:hover { background: var(--surface-high); }
+#status {
+  font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;
+  padding: 0 10px; height: 32px; border-radius: var(--radius-lg); background: var(--island-bg);
+  box-shadow: var(--shadow); pointer-events: auto;
+}
+#status .dot { width: 7px; height: 7px; border-radius: 50%; background: #2f9e44; }
+#status[data-state="saving"] .dot { background: #f08c00; }
+#status[data-state="error"] .dot { background: #e03131; }
+
+/* welcome */
+#welcome {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  transition: opacity .25s;
+}
+#welcome[hidden] { display: none; }
+.welcome-inner { text-align: center; max-width: 440px; padding: 0 24px; transform: translateY(-20px); }
+.logo {
+  font-family: var(--hand-font); font-size: 44px; color: var(--primary); margin: 0;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.logo svg { width: 44px; height: 44px; }
+.welcome-sub { font-family: var(--hand-font); color: var(--text-muted); font-size: 17px; line-height: 1.5; margin: 14px 0 22px; }
+.byline {
+  margin: 28px 0 0; font-size: 13px; color: var(--text-muted);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.byline strong { color: var(--text); font-weight: 600; }
+.byline .role { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--primary); font-weight: 600; }
+.menu-byline { margin: 0; padding: 2px 8px 4px; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+.menu-byline strong { color: var(--text); font-weight: 600; }
+.welcome-list { display: grid; gap: 8px; text-align: left; font-size: 14px; color: var(--text-muted); justify-content: center; }
+.welcome-list div { display: flex; gap: 10px; align-items: center; }
+.welcome-list kbd { min-width: 54px; text-align: center; }
+
+/* toast */
+#toast {
+  position: absolute; left: 50%; bottom: 72px; transform: translate(-50%, 8px);
+  background: var(--text); color: var(--page-bg); padding: 8px 14px; border-radius: var(--radius-lg);
+  font-size: 13px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none;
+  max-width: calc(100% - 32px);
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* help dialog */
+dialog {
+  border: 0; border-radius: 12px; padding: 0; width: min(720px, calc(100% - 32px));
+  background: var(--island-bg); color: var(--text); box-shadow: var(--shadow);
+}
+dialog::backdrop { background: rgba(18, 18, 18, .35); }
+.dialog-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 4px; }
+.dialog-head h2 { margin: 0; font-size: 20px; }
+.dialog-body { padding: 8px 20px 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px 28px; max-height: 70vh; overflow: auto; }
+.dialog-body h3 { font-size: 13px; color: var(--text-muted); font-weight: 600; margin: 14px 0 6px; }
+.sc { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--divider); font-size: 13px; }
+.sc span:last-child { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.credits { grid-column: 1 / -1; font-size: 12px; color: var(--text-muted); margin-top: 12px; }
+
+@media (max-width: 760px) {
+  .doc-name { display: none; }
+  .toolbar { top: 64px; }
+  #hint { display: none; }
+  .panel { top: auto; bottom: 64px; left: 16px; right: 16px; width: auto; max-height: 38vh; }
+  .primary-btn span { display: none; }
+  .primary-btn { padding: 0 9px; }
+  #status .label { display: none; }
+}
+</style>
+</head>
+<body>
+<canvas id="canvas" tabindex="0" aria-label="Drawing canvas"></canvas>
+<textarea id="text-editor" hidden spellcheck="false" aria-label="Edit text"></textarea>
+
+<div class="ui">
+  <div id="welcome">
+    <div class="welcome-inner">
+      <p class="logo"><span data-icon="logo"></span>Sketchboard</p>
+      <p class="welcome-sub">Your drawing saves automatically in this browser.<br>Use Save to keep a copy as a file.</p>
+      <div class="welcome-list">
+        <div><kbd>R</kbd> Draw a box</div>
+        <div><kbd>A</kbd> Drag from one box to another to connect them</div>
+        <div><kbd>Enter</kbd> Add text to the selected box</div>
+        <div><kbd>Ctrl S</kbd> Save to a .excalidraw file</div>
+      </div>
+      <p class="byline"><span>Built by <strong>S. Harish Krishnan</strong></span><span class="role">AI Engineer</span></p>
+    </div>
+  </div>
+
+  <div class="top-left">
+    <div class="menu-wrap">
+      <button class="icon-btn" id="menu-btn" data-icon="menu" title="Menu" aria-label="Menu" aria-expanded="false"></button>
+      <div class="island dropdown" id="menu" hidden role="menu">
+        <button class="menu-item" data-action="open"><span data-icon="open"></span>Open<span class="shortcut">Ctrl+O</span></button>
+        <button class="menu-item" data-action="save"><span data-icon="save"></span>Save to file<span class="shortcut">Ctrl+S</span></button>
+        <button class="menu-item" data-action="saveAs"><span data-icon="saveAs"></span>Save as…<span class="shortcut">Ctrl+Shift+S</span></button>
+        <button class="menu-item" data-action="exportPng"><span data-icon="image"></span>Export image (PNG)<span class="shortcut">Ctrl+Shift+E</span></button>
+        <button class="menu-item" data-action="help"><span data-icon="help"></span>Help &amp; shortcuts<span class="shortcut">?</span></button>
+        <button class="menu-item" data-action="reset"><span data-icon="trash"></span>Reset the canvas</button>
+        <div class="menu-sep"></div>
+        <button class="menu-item" data-action="theme"><span data-icon="moon" id="theme-icon"></span><span id="theme-label">Dark mode</span><span class="shortcut">Alt+Shift+D</span></button>
+        <div class="menu-sep"></div>
+        <div class="menu-label">Canvas background</div>
+        <div class="swatches" id="canvas-swatches" style="padding: 0 8px 4px"></div>
+        <div class="menu-sep"></div>
+        <p class="menu-byline">Built by <strong>S. Harish Krishnan</strong><br>AI Engineer</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="island toolbar" role="toolbar" aria-label="Tools">
+    <button class="tool" id="lock-btn" data-icon="unlock" title="Keep selected tool active after drawing — Q" aria-label="Lock tool"></button>
+    <div class="sep"></div>
+    <button class="tool" data-tool="hand" data-icon="hand" title="Hand (panning tool) — H" aria-label="Hand"></button>
+    <button class="tool" data-tool="selection" data-icon="selection" data-kbd="1" title="Selection — V or 1" aria-label="Selection"></button>
+    <button class="tool" data-tool="rectangle" data-icon="rectangle" data-kbd="2" title="Rectangle — R or 2" aria-label="Rectangle"></button>
+    <button class="tool" data-tool="diamond" data-icon="diamond" data-kbd="3" title="Diamond — D or 3" aria-label="Diamond"></button>
+    <button class="tool" data-tool="ellipse" data-icon="ellipse" data-kbd="4" title="Ellipse — O or 4" aria-label="Ellipse"></button>
+    <button class="tool" data-tool="arrow" data-icon="arrow" data-kbd="5" title="Arrow — A or 5" aria-label="Arrow"></button>
+    <button class="tool" data-tool="text" data-icon="text" data-kbd="8" title="Text — T or 8" aria-label="Text"></button>
+  </div>
+  <div id="hint"></div>
+
+  <div class="top-right">
+    <input class="doc-name" id="doc-name" aria-label="Drawing name" spellcheck="false">
+    <button class="primary-btn" id="save-btn" title="Save to file — Ctrl+S"><span data-icon="save"></span><span>Save</span></button>
+  </div>
+
+  <aside class="island panel" id="panel" hidden aria-label="Element properties">
+    <section data-section="stroke">
+      <h3>Stroke</h3>
+      <div class="swatches" data-swatches="strokeColor"></div>
+    </section>
+    <section data-section="background">
+      <h3>Background</h3>
+      <div class="swatches" data-swatches="backgroundColor"></div>
+    </section>
+    <section data-section="fill">
+      <h3>Fill</h3>
+      <div class="opts">
+        <button class="opt" data-prop="fillStyle" data-value="hachure" data-icon="hachure" title="Hachure"></button>
+        <button class="opt" data-prop="fillStyle" data-value="cross-hatch" data-icon="crossHatch" title="Cross-hatch"></button>
+        <button class="opt" data-prop="fillStyle" data-value="solid" data-icon="solid" title="Solid"></button>
+      </div>
+    </section>
+    <section data-section="strokeWidth">
+      <h3>Stroke width</h3>
+      <div class="opts">
+        <button class="opt" data-prop="strokeWidth" data-value="1" data-icon="thin" title="Thin"></button>
+        <button class="opt" data-prop="strokeWidth" data-value="2" data-icon="bold" title="Bold"></button>
+        <button class="opt" data-prop="strokeWidth" data-value="4" data-icon="extraBold" title="Extra bold"></button>
+      </div>
+    </section>
+    <section data-section="strokeStyle">
+      <h3>Stroke style</h3>
+      <div class="opts">
+        <button class="opt" data-prop="strokeStyle" data-value="solid" data-icon="lineSolid" title="Solid"></button>
+        <button class="opt" data-prop="strokeStyle" data-value="dashed" data-icon="lineDashed" title="Dashed"></button>
+        <button class="opt" data-prop="strokeStyle" data-value="dotted" data-icon="lineDotted" title="Dotted"></button>
+      </div>
+    </section>
+    <section data-section="roughness">
+      <h3>Sloppiness</h3>
+      <div class="opts">
+        <button class="opt" data-prop="roughness" data-value="0" data-icon="architect" title="Architect"></button>
+        <button class="opt" data-prop="roughness" data-value="1" data-icon="artist" title="Artist"></button>
+        <button class="opt" data-prop="roughness" data-value="2" data-icon="cartoonist" title="Cartoonist"></button>
+      </div>
+    </section>
+    <section data-section="edges">
+      <h3>Edges</h3>
+      <div class="opts">
+        <button class="opt" data-prop="edges" data-value="sharp" data-icon="sharp" title="Sharp"></button>
+        <button class="opt" data-prop="edges" data-value="round" data-icon="round" title="Round"></button>
+      </div>
+    </section>
+    <section data-section="arrowheads">
+      <h3>Arrowheads</h3>
+      <div class="opts">
+        <span class="row-label">Start</span>
+        <button class="opt mirror" data-prop="startArrowhead" data-value="null" data-icon="headNone" title="None"></button>
+        <button class="opt mirror" data-prop="startArrowhead" data-value="arrow" data-icon="headArrow" title="Arrow"></button>
+        <button class="opt mirror" data-prop="startArrowhead" data-value="triangle" data-icon="headTriangle" title="Triangle"></button>
+      </div>
+      <div class="opts">
+        <span class="row-label">End</span>
+        <button class="opt" data-prop="endArrowhead" data-value="null" data-icon="headNone" title="None"></button>
+        <button class="opt" data-prop="endArrowhead" data-value="arrow" data-icon="headArrow" title="Arrow"></button>
+        <button class="opt" data-prop="endArrowhead" data-value="triangle" data-icon="headTriangle" title="Triangle"></button>
+      </div>
+    </section>
+    <section data-section="fontSize">
+      <h3>Font size</h3>
+      <div class="opts">
+        <button class="opt" data-prop="fontSize" data-value="16" title="Small">S</button>
+        <button class="opt" data-prop="fontSize" data-value="20" title="Medium">M</button>
+        <button class="opt" data-prop="fontSize" data-value="28" title="Large">L</button>
+        <button class="opt" data-prop="fontSize" data-value="36" title="Extra large">XL</button>
+      </div>
+    </section>
+    <section data-section="opacity">
+      <h3>Opacity</h3>
+      <div class="range-row">
+        <input type="range" id="opacity" min="0" max="100" step="10" aria-label="Opacity">
+        <output id="opacity-out">100</output>
+      </div>
+    </section>
+    <section data-section="layers">
+      <h3>Layers</h3>
+      <div class="opts">
+        <button class="opt" data-layer="back" data-icon="toBack" title="Send to back — Ctrl+Shift+["></button>
+        <button class="opt" data-layer="backward" data-icon="backward" title="Send backward — Ctrl+["></button>
+        <button class="opt" data-layer="forward" data-icon="forward" title="Bring forward — Ctrl+]"></button>
+        <button class="opt" data-layer="front" data-icon="toFront" title="Bring to front — Ctrl+Shift+]"></button>
+      </div>
+    </section>
+    <section data-section="actions">
+      <h3>Actions</h3>
+      <div class="opts">
+        <button class="opt" data-action="duplicate" data-icon="copy" title="Duplicate — Ctrl+D"></button>
+        <button class="opt" data-action="delete" data-icon="trash" title="Delete — Delete"></button>
+      </div>
+    </section>
+  </aside>
+
+  <div class="footer-left">
+    <div class="island group">
+      <button class="tool" id="zoom-out" data-icon="minus" title="Zoom out — Ctrl+-" aria-label="Zoom out"></button>
+      <button class="zoom-label" id="zoom-label" title="Reset zoom — Ctrl+0">100%</button>
+      <button class="tool" id="zoom-in" data-icon="plus" title="Zoom in — Ctrl++" aria-label="Zoom in"></button>
+    </div>
+    <div class="island group">
+      <button class="tool" id="undo-btn" data-icon="undo" title="Undo — Ctrl+Z" aria-label="Undo"></button>
+      <button class="tool" id="redo-btn" data-icon="redo" title="Redo — Ctrl+Shift+Z" aria-label="Redo"></button>
+    </div>
+  </div>
+  <div class="footer-right">
+    <div id="status" data-state="saved" title="Your drawing is stored in this browser"><span class="dot"></span><span class="label">Saved in browser</span></div>
+    <button class="icon-btn" id="help-btn" data-icon="help" title="Help — ?" aria-label="Help"></button>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<div class="island popover" id="palette" hidden>
+  <h4 id="palette-title">Colors</h4>
+  <div class="palette-grid" id="palette-grid"></div>
+  <h4 style="margin-top: 12px">Shades</h4>
+  <div class="shades" id="palette-shades"></div>
+  <div class="hex-row"><span>#</span><input id="hex-input" maxlength="8" spellcheck="false" aria-label="Hex color"><span class="preview" id="hex-preview"></span></div>
+</div>
+
+<dialog id="help-dialog">
+  <div class="dialog-head">
+    <h2>Keyboard shortcuts</h2>
+    <button class="icon-btn" id="help-close" data-icon="close" aria-label="Close" style="box-shadow:none"></button>
+  </div>
+  <div class="dialog-body">
+    <div>
+      <h3>Tools</h3>
+      <div class="sc"><span>Hand (pan)</span><span><kbd>H</kbd></span></div>
+      <div class="sc"><span>Selection</span><span><kbd>V</kbd><kbd>1</kbd></span></div>
+      <div class="sc"><span>Rectangle</span><span><kbd>R</kbd><kbd>2</kbd></span></div>
+      <div class="sc"><span>Diamond</span><span><kbd>D</kbd><kbd>3</kbd></span></div>
+      <div class="sc"><span>Ellipse</span><span><kbd>O</kbd><kbd>4</kbd></span></div>
+      <div class="sc"><span>Arrow</span><span><kbd>A</kbd><kbd>5</kbd></span></div>
+      <div class="sc"><span>Text</span><span><kbd>T</kbd><kbd>8</kbd></span></div>
+      <div class="sc"><span>Keep tool active</span><span><kbd>Q</kbd></span></div>
+      <div class="sc"><span>Draw a perfect square / circle</span><span><kbd>Shift</kbd> + drag</span></div>
+      <h3>View</h3>
+      <div class="sc"><span>Pan</span><span><kbd>Space</kbd> + drag, or scroll</span></div>
+      <div class="sc"><span>Zoom</span><span><kbd>Ctrl</kbd> + scroll</span></div>
+      <div class="sc"><span>Zoom in / out / reset</span><span><kbd>Ctrl +</kbd><kbd>Ctrl -</kbd><kbd>Ctrl 0</kbd></span></div>
+      <div class="sc"><span>Zoom to fit</span><span><kbd>Shift 1</kbd></span></div>
+      <div class="sc"><span>Dark mode</span><span><kbd>Alt Shift D</kbd></span></div>
+    </div>
+    <div>
+      <h3>Editing</h3>
+      <div class="sc"><span>Add / edit text in a box</span><span><kbd>Enter</kbd> or double-click</span></div>
+      <div class="sc"><span>Finish editing text</span><span><kbd>Esc</kbd><kbd>Ctrl Enter</kbd></span></div>
+      <div class="sc"><span>Undo / redo</span><span><kbd>Ctrl Z</kbd><kbd>Ctrl Shift Z</kbd></span></div>
+      <div class="sc"><span>Copy / cut / paste</span><span><kbd>Ctrl C</kbd><kbd>Ctrl X</kbd><kbd>Ctrl V</kbd></span></div>
+      <div class="sc"><span>Duplicate</span><span><kbd>Ctrl D</kbd></span></div>
+      <div class="sc"><span>Select all</span><span><kbd>Ctrl A</kbd></span></div>
+      <div class="sc"><span>Delete</span><span><kbd>Delete</kbd></span></div>
+      <div class="sc"><span>Move selection</span><span><kbd>←↑→↓</kbd> (+ <kbd>Shift</kbd>)</span></div>
+      <div class="sc"><span>Bring forward / to front</span><span><kbd>Ctrl ]</kbd><kbd>Ctrl Shift ]</kbd></span></div>
+      <div class="sc"><span>Send backward / to back</span><span><kbd>Ctrl [</kbd><kbd>Ctrl Shift [</kbd></span></div>
+      <h3>File</h3>
+      <div class="sc"><span>Save / save as</span><span><kbd>Ctrl S</kbd><kbd>Ctrl Shift S</kbd></span></div>
+      <div class="sc"><span>Open a file</span><span><kbd>Ctrl O</kbd> or drop it on the canvas</span></div>
+      <div class="sc"><span>Export PNG</span><span><kbd>Ctrl Shift E</kbd></span></div>
+    </div>
+    <p class="credits">Built by <strong>S. Harish Krishnan</strong>, AI Engineer. Files use the open <code>.excalidraw</code> JSON format. Hand-drawn rendering by rough.js (MIT); Virgil font by Excalidraw (OFL-1.1). Sketchboard is an independent tool inspired by Excalidraw (MIT).</p>
+  </div>
+</dialog>
+
+<input type="file" id="file-input" accept=".excalidraw,.json,application/json" hidden>
+
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<script>
+'use strict';
+
+/* ------------------------------------------------------------------ *
+ * Constants
+ * ------------------------------------------------------------------ */
+const HAND_FONT = '"Virgil", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive';
+const LINE_HEIGHT = 1.25;
+const LABEL_PADDING = 5;
+const BASE_BINDING_GAP = 5;
+const MIN_ARROW_LENGTH = 10;
+const SELECTION_COLOR = '#6965db';
+const BIND_HIGHLIGHT = 'rgba(106, 189, 252, 0.55)';
+const SHAPES = new Set(['rectangle', 'diamond', 'ellipse']);
+const DRAW_TOOLS = new Set(['rectangle', 'diamond', 'ellipse', 'arrow', 'text']);
+const STORAGE_ELEMENTS = 'sketchboard:elements';
+const STORAGE_STATE = 'sketchboard:state';
+
+const PALETTE = {
+  gray:   ['#f8f9fa', '#e9ecef', '#ced4da', '#868e96', '#343a40'],
+  red:    ['#fff5f5', '#ffc9c9', '#ff8787', '#fa5252', '#e03131'],
+  pink:   ['#fff0f6', '#fcc2d7', '#f783ac', '#e64980', '#c2255c'],
+  grape:  ['#f8f0fc', '#eebefa', '#da77f2', '#be4bdb', '#9c36b5'],
+  violet: ['#f3f0ff', '#d0bfff', '#9775fa', '#7950f2', '#6741d9'],
+  blue:   ['#e7f5ff', '#a5d8ff', '#4dabf7', '#228be6', '#1971c2'],
+  cyan:   ['#e3fafc', '#99e9f2', '#3bc9db', '#15aabf', '#0c8599'],
+  teal:   ['#e6fcf5', '#96f2d7', '#38d9a9', '#12b886', '#099268'],
+  green:  ['#ebfbee', '#b2f2bb', '#69db7c', '#40c057', '#2f9e44'],
+  yellow: ['#fff9db', '#ffec99', '#ffd43b', '#fab005', '#f08c00'],
+  orange: ['#fff4e6', '#ffd8a8', '#ffa94d', '#fd7e14', '#e8590c'],
+  bronze: ['#f8f1ee', '#eaddd7', '#d2bab0', '#a18072', '#846358'],
+};
+const QUICK_PICKS = {
+  strokeColor: ['#1e1e1e', '#e03131', '#2f9e44', '#1971c2', '#f08c00'],
+  backgroundColor: ['transparent', '#ffc9c9', '#b2f2bb', '#a5d8ff', '#ffec99'],
+};
+const CANVAS_PICKS = ['#ffffff', '#f8f9fa', '#f5faff', '#fffce8', '#fdf8f6'];
+
+const DEFAULT_STYLE = {
+  strokeColor: '#1e1e1e', backgroundColor: 'transparent', fillStyle: 'solid',
+  strokeWidth: 2, strokeStyle: 'solid', roughness: 1, opacity: 100, edges: 'round',
+  startArrowhead: null, endArrowhead: 'arrow', fontSize: 20,
+};
+
+const ICONS = {
+  logo: '<path d="M4 20l4-1 10.5-10.5a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M13.5 6.5l3 3"/><path d="M3 21c3-1 5 1 8 0"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  unlock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.6-1.8"/>',
+  hand: '<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 5.5v-1a1.5 1.5 0 0 1 3 0V12"/><path d="M14 5.5a1.5 1.5 0 0 1 3 0V12"/><path d="M17 7.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-4.9-2.6L3.6 15a1.5 1.5 0 0 1 2.4-1.8L8 15.5"/>',
+  selection: '<path d="M7 4l11 8.2-5.2 1.1 2.9 5.4-2.1 1.1-2.9-5.4L7 17.8z"/>',
+  rectangle: '<rect x="4" y="5" width="16" height="14" rx="2.5"/>',
+  diamond: '<path d="M12 3.5l8.5 8.5-8.5 8.5L3.5 12z"/>',
+  ellipse: '<circle cx="12" cy="12" r="8.5"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  text: '<path d="M6 6.5V5h12v1.5M12 5v14M9.5 19h5"/>',
+  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  redo: '<path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+  minus: '<path d="M5 12h14"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .9-1 1.6v.4M12 17h.01"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  save: '<path d="M6 4h10l4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M8 4v4h7V4M8 20v-6h8v6"/>',
+  saveAs: '<path d="M12 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10l4 4v3"/><path d="M8 4v4h7V4"/><path d="M15 21l1-3 4-4 2 2-4 4z"/>',
+  open: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 9"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  hachure: '<rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M4.5 11.5l7-7M4.5 17.5l13-13M9 20l11-11M15 20l5-5"/>',
+  crossHatch: '<rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M4.5 11.5l7-7M4.5 17.5l13-13M9 20l11-11M15 20l5-5M12.5 4.5l7 7M6.5 4.5l13 13M4 9l11 11M4 15l5 5"/>',
+  solid: '<rect x="4" y="4" width="16" height="16" rx="2.5" fill="currentColor"/>',
+  thin: '<path d="M4 12h16" stroke-width="1.25"/>',
+  bold: '<path d="M4 12h16" stroke-width="2.5"/>',
+  extraBold: '<path d="M4 12h16" stroke-width="4.5"/>',
+  lineSolid: '<path d="M4 12h16" stroke-width="2"/>',
+  lineDashed: '<path d="M4 12h16" stroke-width="2" stroke-dasharray="4 3.5" stroke-linecap="butt"/>',
+  lineDotted: '<path d="M4 12h16" stroke-width="2.25" stroke-dasharray="0.1 4"/>',
+  architect: '<path d="M4 17C8 10 14 8 20 7"/>',
+  artist: '<path d="M4 17c2-3 3.5-1 5.5-4s4-2 6-4.5S19 7 20 7"/>',
+  cartoonist: '<path d="M4 18c1-4 2.5 0 3.5-4s2.5 0 3.5-4 2.5 0 3.5-4S18 7 20 6"/>',
+  sharp: '<path d="M5 19V5h14"/>',
+  round: '<path d="M5 19v-8a6 6 0 0 1 6-6h8"/>',
+  headNone: '<path d="M4 12h16"/>',
+  headArrow: '<path d="M4 12h15M14 7l5 5-5 5"/>',
+  headTriangle: '<path d="M4 12h10"/><path d="M13 7l7 5-7 5z" fill="currentColor"/>',
+  toBack: '<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',
+  backward: '<path d="M12 5v13M8 14l4 4 4-4"/>',
+  forward: '<path d="M12 19V6M8 10l4-4 4 4"/>',
+  toFront: '<path d="M12 20V9M8 13l4-4 4 4M5 4h14"/>',
+};
+const svgIcon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+
+/* ------------------------------------------------------------------ *
+ * State
+ * ------------------------------------------------------------------ */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+const canvas = $('#canvas');
+const ctx = canvas.getContext('2d');
+const rc = rough.canvas(canvas);
+const gen = rc.generator;
+const measureCtx = document.createElement('canvas').getContext('2d');
+
+let elements = [];
+const app = {
+  tool: 'selection', toolLocked: false,
+  scrollX: 0, scrollY: 0, zoom: 1,
+  theme: 'light', viewBackgroundColor: '#ffffff',
+  name: defaultName(),
+  style: { ...DEFAULT_STYLE },
+};
+let selected = new Set();
+let pointer = null;        // active gesture
+let hoverBind = null;      // shape highlighted as an arrow-binding target
+let editing = null;        // element whose text is being edited
+let spaceDown = false;
+let lastPointer = { x: 0, y: 0 };
+let fileHandle = null;
+let paletteFor = null;     // which property the color popover edits
+
+function defaultName() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `Untitled-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
+const randInt = () => Math.floor(Math.random() * 2 ** 31);
+const uid = () => (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 21) : Math.random().toString(36).slice(2) + Date.now().toString(36));
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const getEl = (id) => elements.find((e) => e.id === id);
+const selectedEls = () => elements.filter((e) => selected.has(e.id));
+const isTyping = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+
+function touch(el) {
+  el.version = (el.version || 1) + 1;
+  el.versionNonce = randInt();
+  el.updated = Date.now();
+}
+
+function createElement(type, x, y) {
+  const s = app.style;
+  const el = {
+    id: uid(), type, x, y, width: 0, height: 0, angle: 0,
+    strokeColor: s.strokeColor,
+    backgroundColor: SHAPES.has(type) ? s.backgroundColor : 'transparent',
+    fillStyle: s.fillStyle, strokeWidth: s.strokeWidth, strokeStyle: s.strokeStyle,
+    roughness: s.roughness, opacity: s.opacity,
+    groupIds: [], frameId: null, index: null, roundness: null,
+    seed: randInt(), version: 1, versionNonce: randInt(), isDeleted: false,
+    boundElements: null, updated: Date.now(), link: null, locked: false,
+  };
+  if (type === 'rectangle' || type === 'diamond') {
+    el.roundness = s.edges === 'round' ? { type: type === 'rectangle' ? 3 : 2 } : null;
+  }
+  if (type === 'arrow') {
+    Object.assign(el, {
+      points: [[0, 0], [0, 0]], startBinding: null, endBinding: null,
+      startArrowhead: s.startArrowhead, endArrowhead: s.endArrowhead,
+      elbowed: false, lastCommittedPoint: null,
+    });
+  }
+  if (type === 'text') {
+    Object.assign(el, {
+      text: '', originalText: '', fontSize: s.fontSize, fontFamily: 1,
+      textAlign: 'left', verticalAlign: 'top', containerId: null,
+      lineHeight: LINE_HEIGHT, autoResize: true,
+    });
+  }
+  return el;
+}
+
+/* ------------------------------------------------------------------ *
+ * Geometry
+ * ------------------------------------------------------------------ */
+function arrowEnds(a) {
+  const last = a.points[a.points.length - 1];
+  return [{ x: a.x, y: a.y }, { x: a.x + last[0], y: a.y + last[1] }];
+}
+function setArrowEnds(a, p0, p1) {
+  a.x = p0.x; a.y = p0.y;
+  a.points = [[0, 0], [p1.x - p0.x, p1.y - p0.y]];
+  a.width = Math.abs(p1.x - p0.x);
+  a.height = Math.abs(p1.y - p0.y);
+}
+function boundsOf(el) {
+  if (el.type === 'arrow') {
+    const [a, b] = arrowEnds(el);
+    return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
+  }
+  return { x: el.x, y: el.y, w: el.width, h: el.height };
+}
+function boundsOfAll(list) {
+  let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+  for (const el of list) {
+    const b = boundsOf(el);
+    x1 = Math.min(x1, b.x); y1 = Math.min(y1, b.y);
+    x2 = Math.max(x2, b.x + b.w); y2 = Math.max(y2, b.y + b.h);
+  }
+  return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+}
+const center = (el) => ({ x: el.x + el.width / 2, y: el.y + el.height / 2 });
+const cornerRadius = (size) => (size <= 128 ? size * 0.25 : 32);
+const bindingGap = (el) => BASE_BINDING_GAP + el.strokeWidth / 2;
+
+function distToSegment(p, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 ? clamp(((p.x - a.x) * dx + (p.y - a.y) * dy) / len2, 0, 1) : 0;
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+
+function hitElement(el, p, tol) {
+  if (el.type === 'arrow') {
+    const [a, b] = arrowEnds(el);
+    return distToSegment(p, a, b) <= tol + el.strokeWidth / 2;
+  }
+  const { x, y, width: w, height: h } = el;
+  if (p.x < x - tol || p.x > x + w + tol || p.y < y - tol || p.y > y + h + tol) return false;
+  const cx = x + w / 2, cy = y + h / 2;
+  if (el.type === 'ellipse') {
+    const dx = (p.x - cx) / (w / 2 + tol), dy = (p.y - cy) / (h / 2 + tol);
+    return dx * dx + dy * dy <= 1;
+  }
+  if (el.type === 'diamond') {
+    return Math.abs(p.x - cx) / (w / 2 + tol) + Math.abs(p.y - cy) / (h / 2 + tol) <= 1;
+  }
+  return true;
+}
+function elementAt(p) {
+  const tol = 6 / app.zoom;
+  for (let i = elements.length - 1; i >= 0; i--) {
+    if (hitElement(elements[i], p, tol)) return elements[i];
+  }
+  return null;
+}
+function bindTargetAt(p, excludeId) {
+  const tol = clamp(15 / app.zoom, 8, 40);
+  for (let i = elements.length - 1; i >= 0; i--) {
+    const el = elements[i];
+    if (SHAPES.has(el.type) && el.id !== excludeId && hitElement(el, p, tol)) return el;
+  }
+  return null;
+}
+
+/* Point on a shape's outline (plus gap) along the ray from its center toward `toward`. */
+function edgePoint(el, toward, gap) {
+  const c = center(el);
+  let dx = toward.x - c.x, dy = toward.y - c.y;
+  let len = Math.hypot(dx, dy);
+  if (len < 1e-6) { dx = 1; dy = 0; len = 1; }
+  dx /= len; dy /= len;
+  const hw = Math.max(el.width / 2, 0.5), hh = Math.max(el.height / 2, 0.5);
+  let t;
+  if (el.type === 'ellipse') {
+    t = 1 / Math.sqrt((dx / hw) ** 2 + (dy / hh) ** 2);
+  } else if (el.type === 'diamond') {
+    t = 1 / (Math.abs(dx) / hw + Math.abs(dy) / hh);
+  } else {
+    t = Math.min(dx ? hw / Math.abs(dx) : Infinity, dy ? hh / Math.abs(dy) : Infinity);
+    if (el.roundness) {
+      const r = Math.min(cornerRadius(Math.min(el.width, el.height)), hw, hh);
+      const px = t * dx, py = t * dy;
+      if (Math.abs(px) > hw - r && Math.abs(py) > hh - r) {
+        const ccx = Math.sign(px) * (hw - r), ccy = Math.sign(py) * (hh - r);
+        const b = dx * ccx + dy * ccy;
+        const disc = b * b - (ccx * ccx + ccy * ccy - r * r);
+        if (disc >= 0) t = b + Math.sqrt(disc);
+      }
+    }
+  }
+  if (!isFinite(t)) t = 0;
+  return { x: c.x + dx * (t + gap), y: c.y + dy * (t + gap) };
+}
+
+/* Re-route an arrow so each bound end sits on its shape's outline, aimed at the other end. */
+function updateArrow(a) {
+  const s = a.startBinding && getEl(a.startBinding.elementId);
+  const e = a.endBinding && getEl(a.endBinding.elementId);
+  if (a.startBinding && !s) a.startBinding = null;
+  if (a.endBinding && !e) a.endBinding = null;
+  if (!s && !e) return;
+  const [p0, p1] = arrowEnds(a);
+  const n0 = s ? edgePoint(s, e ? center(e) : p1, bindingGap(s)) : p0;
+  const n1 = e ? edgePoint(e, s ? center(s) : p0, bindingGap(e)) : p1;
+  setArrowEnds(a, n0, n1);
+  touch(a);
+}
+function refreshBoundArrows() {
+  for (const el of elements) {
+    if (el.type === 'arrow' && (el.startBinding || el.endBinding)) updateArrow(el);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Text helpers
+ * ------------------------------------------------------------------ */
+const fontFor = (size) => `${size}px ${HAND_FONT}`;
+const wrapCache = new Map();
+function wrapLines(text, fontSize, maxWidth) {
+  const key = `${fontSize}|${maxWidth}|${text}`;
+  if (wrapCache.has(key)) return wrapCache.get(key);
+  measureCtx.font = fontFor(fontSize);
+  const width = (s) => measureCtx.measureText(s).width;
+  const out = [];
+  for (const para of text.split('\n')) {
+    if (maxWidth == null) { out.push(para); continue; }
+    let line = '';
+    for (const token of para.split(/(\s+)/)) {
+      if (!token) continue;
+      const candidate = line + token;
+      if (width(candidate) <= maxWidth || !line.trim()) {
+        line = candidate;
+      } else {
+        out.push(line.trimEnd());
+        line = token.trimStart();
+      }
+      // break a single word that is wider than the box
+      while (width(line) > maxWidth && line.length > 1) {
+        let cut = line.length - 1;
+        while (cut > 1 && width(line.slice(0, cut)) > maxWidth) cut--;
+        out.push(line.slice(0, cut));
+        line = line.slice(cut);
+      }
+    }
+    out.push(line);
+  }
+  if (wrapCache.size > 500) wrapCache.clear();
+  wrapCache.set(key, out);
+  return out;
+}
+function labelMaxWidth(el) {
+  const w = el.type === 'ellipse' ? el.width / Math.SQRT2 : el.type === 'diamond' ? el.width / 2 : el.width;
+  return Math.max(w - LABEL_PADDING * 2, 8);
+}
+function measureFreeText(el) {
+  measureCtx.font = fontFor(el.fontSize);
+  const lines = el.text.split('\n');
+  el.width = Math.max(1, ...lines.map((l) => measureCtx.measureText(l).width));
+  el.height = lines.length * el.fontSize * LINE_HEIGHT;
+}
+/* Grow a box vertically so its label fits. */
+function fitLabel(el) {
+  if (!el.text) return;
+  const lines = wrapLines(el.text, el.fontSize, labelMaxWidth(el));
+  const textH = lines.length * el.fontSize * LINE_HEIGHT + LABEL_PADDING * 2;
+  const need = el.type === 'ellipse' ? textH * Math.SQRT2 : el.type === 'diamond' ? textH * 2 : textH;
+  if (el.height < need) {
+    el.y -= (need - el.height) / 2;
+    el.height = need;
+    touch(el);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Rough.js shape generation (cached per element)
+ * ------------------------------------------------------------------ */
+function adjustRoughness(el) {
+  const r = el.roughness;
+  const w = el.type === 'arrow' ? Math.abs(el.points[1][0]) : el.width;
+  const h = el.type === 'arrow' ? Math.abs(el.points[1][1]) : el.height;
+  const maxS = Math.max(w, h), minS = Math.min(w, h);
+  if ((minS >= 20 && maxS >= 50) || !r || (el.type === 'arrow' && maxS >= 50)) return r;
+  return Math.min(r / (maxS < 10 ? 3 : 2), 2.5);
+}
+function roughOptions(el, continuous) {
+  const sw = el.strokeWidth;
+  const dashed = el.strokeStyle === 'dashed', dotted = el.strokeStyle === 'dotted';
+  const o = {
+    seed: el.seed,
+    strokeWidth: dashed || dotted ? sw + 0.5 : sw,
+    fillWeight: sw / 2,
+    hachureGap: sw * 4,
+    roughness: adjustRoughness(el),
+    stroke: el.strokeColor,
+    preserveVertices: continuous || el.roughness < 2,
+    disableMultiStroke: dashed || dotted,
+  };
+  if (dashed) o.strokeLineDash = [8, 8 + sw];
+  if (dotted) o.strokeLineDash = [1.5, 6 + sw];
+  if (SHAPES.has(el.type) && el.backgroundColor !== 'transparent') {
+    o.fill = el.backgroundColor;
+    o.fillStyle = el.fillStyle;
+  }
+  return o;
+}
+function roundedPolygonPath(pts, r) {
+  const n = pts.length;
+  let d = '';
+  for (let i = 0; i < n; i++) {
+    const prev = pts[(i - 1 + n) % n], v = pts[i], next = pts[(i + 1) % n];
+    const lp = Math.hypot(prev[0] - v[0], prev[1] - v[1]);
+    const ln = Math.hypot(next[0] - v[0], next[1] - v[1]);
+    const kp = Math.min(r / lp, 0.5), kn = Math.min(r / ln, 0.5);
+    const a = [v[0] + (prev[0] - v[0]) * kp, v[1] + (prev[1] - v[1]) * kp];
+    const b = [v[0] + (next[0] - v[0]) * kn, v[1] + (next[1] - v[1]) * kn];
+    d += `${i ? 'L' : 'M'} ${a[0]} ${a[1]} Q ${v[0]} ${v[1]}, ${b[0]} ${b[1]} `;
+  }
+  return d + 'Z';
+}
+function generateShape(el) {
+  const w = el.width, h = el.height;
+  if (el.type === 'rectangle') {
+    if (el.roundness) {
+      const r = cornerRadius(Math.min(w, h));
+      return [gen.path(
+        `M ${r} 0 L ${w - r} 0 Q ${w} 0, ${w} ${r} L ${w} ${h - r} Q ${w} ${h}, ${w - r} ${h} L ${r} ${h} Q 0 ${h}, 0 ${h - r} L 0 ${r} Q 0 0, ${r} 0`,
+        roughOptions(el, true))];
+    }
+    return [gen.rectangle(0, 0, w, h, roughOptions(el, false))];
+  }
+  if (el.type === 'diamond') {
+    const pts = [[w / 2, 0], [w, h / 2], [w / 2, h], [0, h / 2]];
+    if (el.roundness) return [gen.path(roundedPolygonPath(pts, cornerRadius(Math.min(w, h) / 2)), roughOptions(el, true))];
+    return [gen.polygon(pts, roughOptions(el, false))];
+  }
+  if (el.type === 'ellipse') {
+    return [gen.ellipse(w / 2, h / 2, w, h, roughOptions(el, false))];
+  }
+  if (el.type === 'arrow') {
+    const [dx, dy] = el.points[1];
+    const o = roughOptions(el, false);
+    const out = [gen.linearPath([[0, 0], [dx, dy]], o)];
+    const len = Math.hypot(dx, dy);
+    if (len > 0) {
+      const headOpts = { ...o, strokeLineDash: undefined, disableMultiStroke: false, strokeWidth: el.strokeWidth };
+      const head = (kind, tip, from) => {
+        if (!kind) return;
+        const ang = Math.atan2(tip[1] - from[1], tip[0] - from[0]);
+        const size = Math.min(kind === 'triangle' ? 18 : 25, len * 0.5);
+        const spread = (kind === 'triangle' ? 25 : 20) * Math.PI / 180;
+        const p1 = [tip[0] - size * Math.cos(ang - spread), tip[1] - size * Math.sin(ang - spread)];
+        const p2 = [tip[0] - size * Math.cos(ang + spread), tip[1] - size * Math.sin(ang + spread)];
+        if (kind === 'triangle') out.push(gen.polygon([tip, p1, p2], { ...headOpts, fill: el.strokeColor, fillStyle: 'solid' }));
+        else out.push(gen.linearPath([p1, tip, p2], headOpts));
+      };
+      head(el.endArrowhead, [dx, dy], [0, 0]);
+      head(el.startArrowhead, [0, 0], [dx, dy]);
+    }
+    return out;
+  }
+  return [];
+}
+const shapeCache = new WeakMap();
+function drawablesFor(el) {
+  const key = [el.type, el.width, el.height, el.points ? el.points.flat().join(',') : '',
+    el.strokeColor, el.backgroundColor, el.fillStyle, el.strokeWidth, el.strokeStyle,
+    el.roughness, el.seed, el.roundness ? 1 : 0, el.startArrowhead, el.endArrowhead].join('|');
+  const hit = shapeCache.get(el);
+  if (hit && hit.key === key) return hit.drawables;
+  const drawables = generateShape(el);
+  shapeCache.set(el, { key, drawables });
+  return drawables;
+}
+
+/* ------------------------------------------------------------------ *
+ * Rendering
+ * ------------------------------------------------------------------ */
+function drawElement(c, roughCanvas, el, hideText) {
+  c.save();
+  c.globalAlpha = (el.opacity ?? 100) / 100;
+  if (el.angle) {
+    const cx = el.x + el.width / 2, cy = el.y + el.height / 2;
+    c.translate(cx, cy); c.rotate(el.angle); c.translate(-cx, -cy);
+  }
+  if (el.type === 'text') {
+    if (!hideText) {
+      c.font = fontFor(el.fontSize);
+      c.fillStyle = el.strokeColor;
+      c.textAlign = 'left';
+      c.textBaseline = 'middle';
+      const lh = el.fontSize * LINE_HEIGHT;
+      el.text.split('\n').forEach((line, i) => c.fillText(line, el.x, el.y + i * lh + lh / 2));
+    }
+    c.restore();
+    return;
+  }
+  c.translate(el.x, el.y);
+  for (const d of drawablesFor(el)) roughCanvas.draw(d);
+  if (el.text && !hideText) {
+    const lines = wrapLines(el.text, el.fontSize, labelMaxWidth(el));
+    const lh = el.fontSize * LINE_HEIGHT;
+    const top = el.height / 2 - (lines.length * lh) / 2;
+    c.font = fontFor(el.fontSize);
+    c.fillStyle = el.strokeColor;
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    lines.forEach((line, i) => c.fillText(line, el.width / 2, top + i * lh + lh / 2));
+  }
+  c.restore();
+}
+
+function shapeOutlinePath(c, el, inflate) {
+  const x = el.x - inflate, y = el.y - inflate, w = el.width + inflate * 2, h = el.height + inflate * 2;
+  c.beginPath();
+  if (el.type === 'ellipse') {
+    c.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+  } else if (el.type === 'diamond') {
+    c.moveTo(x + w / 2, y); c.lineTo(x + w, y + h / 2); c.lineTo(x + w / 2, y + h); c.lineTo(x, y + h / 2); c.closePath();
+  } else {
+    const r = el.roundness ? cornerRadius(Math.min(el.width, el.height)) + inflate : 0;
+    c.roundRect(x, y, w, h, Math.min(r, w / 2, h / 2));
+  }
+}
+
+function transformHandles(el) {
+  const z = app.zoom, pad = 4 / z;
+  const x1 = el.x - pad, y1 = el.y - pad, x2 = el.x + el.width + pad, y2 = el.y + el.height + pad;
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  const handles = [
+    { id: 'nw', x: x1, y: y1 }, { id: 'ne', x: x2, y: y1 },
+    { id: 'sw', x: x1, y: y2 }, { id: 'se', x: x2, y: y2 },
+  ];
+  if (el.width * z > 44) handles.push({ id: 'n', x: mx, y: y1 }, { id: 's', x: mx, y: y2 });
+  if (el.height * z > 44) handles.push({ id: 'w', x: x1, y: my }, { id: 'e', x: x2, y: my });
+  return handles;
+}
+
+function drawSelection() {
+  const sel = selectedEls();
+  if (!sel.length || (pointer && (pointer.mode === 'create' || pointer.mode === 'createArrow'))) return;
+  const z = app.zoom;
+  ctx.save();
+  ctx.lineWidth = 1 / z;
+  ctx.strokeStyle = SELECTION_COLOR;
+  const pad = 4 / z;
+  if (sel.length === 1) {
+    const el = sel[0];
+    if (el.type === 'arrow') {
+      const [a, b] = arrowEnds(el);
+      for (const p of [a, b]) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 5 / z, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.stroke();
+      }
+    } else {
+      const b = boundsOf(el);
+      ctx.strokeRect(b.x - pad, b.y - pad, b.w + pad * 2, b.h + pad * 2);
+      if (el.type !== 'text' && el !== editing) {
+        const s = 8 / z;
+        for (const h of transformHandles(el)) {
+          ctx.beginPath();
+          ctx.roundRect(h.x - s / 2, h.y - s / 2, s, s, 2 / z);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+    }
+  } else {
+    for (const el of sel) {
+      const b = boundsOf(el);
+      ctx.globalAlpha = 0.6;
+      ctx.strokeRect(b.x - pad, b.y - pad, b.w + pad * 2, b.h + pad * 2);
+    }
+    ctx.globalAlpha = 1;
+    const all = boundsOfAll(sel);
+    ctx.setLineDash([4 / z, 4 / z]);
+    ctx.strokeRect(all.x - pad * 2, all.y - pad * 2, all.w + pad * 4, all.h + pad * 4);
+  }
+  ctx.restore();
+}
+
+let rafId = 0;
+function requestRender() {
+  if (!rafId) rafId = requestAnimationFrame(() => { rafId = 0; render(); });
+}
+function render() {
+  const dpr = window.devicePixelRatio || 1;
+  const W = window.innerWidth, H = window.innerHeight;
+  if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = app.viewBackgroundColor;
+  ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.scale(app.zoom, app.zoom);
+  ctx.translate(app.scrollX, app.scrollY);
+
+  const view = { x: -app.scrollX, y: -app.scrollY, w: W / app.zoom, h: H / app.zoom };
+  for (const el of elements) {
+    const b = boundsOf(el);
+    const m = 50;
+    if (b.x > view.x + view.w + m || b.y > view.y + view.h + m || b.x + b.w < view.x - m || b.y + b.h < view.y - m) continue;
+    drawElement(ctx, rc, el, el === editing);
+  }
+
+  if (hoverBind) {
+    ctx.save();
+    ctx.strokeStyle = BIND_HIGHLIGHT;
+    ctx.lineWidth = 8 / app.zoom;
+    shapeOutlinePath(ctx, hoverBind, bindingGap(hoverBind));
+    ctx.stroke();
+    ctx.restore();
+  }
+  drawSelection();
+
+  if (pointer && pointer.mode === 'marquee') {
+    const r = rectFrom(pointer.start, pointer.cur);
+    ctx.save();
+    ctx.fillStyle = 'rgba(105, 101, 219, 0.08)';
+    ctx.strokeStyle = SELECTION_COLOR;
+    ctx.lineWidth = 1 / app.zoom;
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    ctx.restore();
+  }
+  ctx.restore();
+  positionEditor();
+  $('#welcome').hidden = elements.length > 0 || !!editing;
+}
+const rectFrom = (a, b) => ({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) });
+
+/* ------------------------------------------------------------------ *
+ * Viewport
+ * ------------------------------------------------------------------ */
+const toScene = (cx, cy) => ({ x: cx / app.zoom - app.scrollX, y: cy / app.zoom - app.scrollY });
+function zoomAt(z, sx, sy) {
+  z = clamp(z, 0.1, 30);
+  const before = toScene(sx, sy);
+  app.zoom = z;
+  app.scrollX = sx / z - before.x;
+  app.scrollY = sy / z - before.y;
+  updateZoomLabel();
+  requestRender();
+  saveSoon();
+}
+const zoomStep = (dir) => {
+  const z = Math.round((app.zoom + dir * 0.1) * 10) / 10;
+  zoomAt(z, window.innerWidth / 2, window.innerHeight / 2);
+};
+function zoomToFit() {
+  if (!elements.length) { app.zoom = 1; app.scrollX = 0; app.scrollY = 0; updateZoomLabel(); requestRender(); return; }
+  const b = boundsOfAll(elements);
+  const W = window.innerWidth, H = window.innerHeight;
+  const z = clamp(Math.min((W - 160) / Math.max(b.w, 1), (H - 220) / Math.max(b.h, 1)), 0.1, 1);
+  app.zoom = z;
+  app.scrollX = W / 2 / z - (b.x + b.w / 2);
+  app.scrollY = H / 2 / z - (b.y + b.h / 2);
+  updateZoomLabel();
+  requestRender();
+  saveSoon();
+}
+function updateZoomLabel() { $('#zoom-label').textContent = `${Math.round(app.zoom * 100)}%`; }
+
+/* ------------------------------------------------------------------ *
+ * Pointer interaction
+ * ------------------------------------------------------------------ */
+const CURSORS = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize' };
+const setCursor = (c) => { canvas.style.cursor = c; };
+
+function hitHandle(el, p) {
+  const r = 7 / app.zoom;
+  return transformHandles(el).find((h) => Math.abs(p.x - h.x) <= r && Math.abs(p.y - h.y) <= r) || null;
+}
+function hitArrowEnd(el, p) {
+  const r = 10 / app.zoom;
+  const ends = arrowEnds(el);
+  for (let i = 1; i >= 0; i--) if (Math.hypot(p.x - ends[i].x, p.y - ends[i].y) <= r) return i;
+  return null;
+}
+function updateHoverCursor(p) {
+  if (spaceDown || app.tool === 'hand') return setCursor('grab');
+  if (app.tool === 'text') return setCursor('text');
+  if (app.tool !== 'selection') return setCursor('crosshair');
+  const sel = selectedEls();
+  if (sel.length === 1) {
+    const el = sel[0];
+    if (el.type === 'arrow' && hitArrowEnd(el, p) !== null) return setCursor('pointer');
+    if (SHAPES.has(el.type)) {
+      const h = hitHandle(el, p);
+      if (h) return setCursor(CURSORS[h.id]);
+    }
+  }
+  setCursor(elementAt(p) ? 'move' : 'default');
+}
+function snapAngle(from, to) {
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const len = Math.hypot(dx, dy);
+  const step = Math.PI / 12;
+  const ang = Math.round(Math.atan2(dy, dx) / step) * step;
+  return { x: from.x + len * Math.cos(ang), y: from.y + len * Math.sin(ang) };
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (editing) finishEditing();
+  closePopovers();
+  canvas.focus({ preventScroll: true });
+  const p = toScene(e.clientX, e.clientY);
+  lastPointer = p;
+
+  if (e.button === 1 || (e.button === 0 && (spaceDown || app.tool === 'hand'))) {
+    pointer = { mode: 'pan', sx: e.clientX, sy: e.clientY, ox: app.scrollX, oy: app.scrollY };
+    canvas.setPointerCapture(e.pointerId);
+    setCursor('grabbing');
+    return;
+  }
+  if (e.button !== 0) return;
+  canvas.setPointerCapture(e.pointerId);
+
+  if (app.tool === 'selection') {
+    const sel = selectedEls();
+    if (sel.length === 1) {
+      const el = sel[0];
+      if (el.type === 'arrow') {
+        const end = hitArrowEnd(el, p);
+        if (end !== null) { pointer = { mode: 'arrowEnd', el, end, changed: false }; return; }
+      } else if (SHAPES.has(el.type)) {
+        const h = hitHandle(el, p);
+        if (h) {
+          pointer = { mode: 'resize', el, handle: h.id, start: p, orig: { x: el.x, y: el.y, w: el.width, h: el.height }, changed: false };
+          return;
+        }
+      }
+    }
+    const hit = elementAt(p);
+    if (hit) {
+      if (e.shiftKey) {
+        if (selected.has(hit.id)) selected.delete(hit.id); else selected.add(hit.id);
+      } else if (!selected.has(hit.id)) {
+        selected = new Set([hit.id]);
+      }
+      const moving = selectedEls();
+      pointer = { mode: 'move', start: p, orig: new Map(moving.map((m) => [m.id, { x: m.x, y: m.y }])), changed: false };
+    } else {
+      if (!e.shiftKey) selected = new Set();
+      pointer = { mode: 'marquee', start: p, cur: p, base: new Set(selected) };
+    }
+    onSelectionChange();
+    requestRender();
+    return;
+  }
+
+  if (SHAPES.has(app.tool)) {
+    const el = createElement(app.tool, p.x, p.y);
+    elements.push(el);
+    selected = new Set([el.id]);
+    pointer = { mode: 'create', el, start: p };
+    onSelectionChange();
+    requestRender();
+    return;
+  }
+
+  if (app.tool === 'arrow') {
+    const target = bindTargetAt(p);
+    const el = createElement('arrow', p.x, p.y);
+    if (target) el.startBinding = { elementId: target.id };
+    elements.push(el);
+    selected = new Set([el.id]);
+    pointer = { mode: 'createArrow', el, start: p };
+    onSelectionChange();
+    requestRender();
+    return;
+  }
+
+  if (app.tool === 'text') {
+    e.preventDefault();
+    const hit = elementAt(p);
+    if (hit && (SHAPES.has(hit.type) || hit.type === 'text')) startEditing(hit);
+    else createTextAt(p);
+    if (!app.toolLocked) setTool('selection');
+  }
+});
+
+window.addEventListener('pointermove', (e) => {
+  const p = toScene(e.clientX, e.clientY);
+  lastPointer = p;
+  if (!pointer) {
+    if (e.target === canvas) updateHoverCursor(p);
+    return;
+  }
+  switch (pointer.mode) {
+    case 'pan': {
+      app.scrollX = pointer.ox + (e.clientX - pointer.sx) / app.zoom;
+      app.scrollY = pointer.oy + (e.clientY - pointer.sy) / app.zoom;
+      break;
+    }
+    case 'create': {
+      const el = pointer.el, s = pointer.start;
+      let x2 = p.x, y2 = p.y;
+      if (e.shiftKey) {
+        const size = Math.max(Math.abs(x2 - s.x), Math.abs(y2 - s.y));
+        x2 = s.x + Math.sign(x2 - s.x || 1) * size;
+        y2 = s.y + Math.sign(y2 - s.y || 1) * size;
+      }
+      el.x = Math.min(s.x, x2); el.y = Math.min(s.y, y2);
+      el.width = Math.abs(x2 - s.x); el.height = Math.abs(y2 - s.y);
+      touch(el);
+      break;
+    }
+    case 'createArrow': {
+      const el = pointer.el;
+      const from = el.startBinding ? getEl(el.startBinding.elementId) : null;
+      let end = e.shiftKey && !from ? snapAngle(pointer.start, p) : p;
+      hoverBind = e.ctrlKey || e.metaKey ? null : bindTargetAt(p, from && from.id);
+      const p0 = from ? edgePoint(from, end, bindingGap(from)) : pointer.start;
+      setArrowEnds(el, p0, end);
+      touch(el);
+      break;
+    }
+    case 'arrowEnd': {
+      const el = pointer.el, end = pointer.end;
+      const otherKey = end === 0 ? 'endBinding' : 'startBinding';
+      el[end === 0 ? 'startBinding' : 'endBinding'] = null;
+      const other = el[otherKey] ? getEl(el[otherKey].elementId) : null;
+      hoverBind = e.ctrlKey || e.metaKey ? null : bindTargetAt(p, other && other.id);
+      const ends = arrowEnds(el);
+      ends[end] = p;
+      if (other) ends[1 - end] = edgePoint(other, p, bindingGap(other));
+      setArrowEnds(el, ends[0], ends[1]);
+      touch(el);
+      pointer.changed = true;
+      break;
+    }
+    case 'move': {
+      const dx = p.x - pointer.start.x, dy = p.y - pointer.start.y;
+      if (!pointer.changed) {
+        if (Math.hypot(dx, dy) * app.zoom < 2) break;
+        pointer.changed = true;
+        // dragging an arrow on its own detaches it from shapes that stay put
+        for (const id of pointer.orig.keys()) {
+          const el = getEl(id);
+          if (el && el.type === 'arrow') {
+            if (el.startBinding && !pointer.orig.has(el.startBinding.elementId)) el.startBinding = null;
+            if (el.endBinding && !pointer.orig.has(el.endBinding.elementId)) el.endBinding = null;
+          }
+        }
+      }
+      for (const [id, o] of pointer.orig) {
+        const el = getEl(id);
+        if (!el) continue;
+        el.x = o.x + dx; el.y = o.y + dy;
+      }
+      refreshBoundArrows();
+      break;
+    }
+    case 'resize': {
+      const { el, orig, handle } = pointer;
+      const dx = p.x - pointer.start.x, dy = p.y - pointer.start.y;
+      let x1 = orig.x, y1 = orig.y, x2 = orig.x + orig.w, y2 = orig.y + orig.h;
+      if (handle.includes('w')) x1 += dx;
+      if (handle.includes('e')) x2 += dx;
+      if (handle.includes('n')) y1 += dy;
+      if (handle.includes('s')) y2 += dy;
+      if (e.shiftKey && handle.length === 2 && orig.w > 0 && orig.h > 0) {
+        const sx = (x2 - x1) / orig.w, sy = (y2 - y1) / orig.h;
+        const k = Math.max(Math.abs(sx), Math.abs(sy));
+        const nw = orig.w * k * Math.sign(sx || 1), nh = orig.h * k * Math.sign(sy || 1);
+        if (handle.includes('w')) x1 = x2 - nw; else x2 = x1 + nw;
+        if (handle.includes('n')) y1 = y2 - nh; else y2 = y1 + nh;
+      }
+      el.x = Math.min(x1, x2); el.y = Math.min(y1, y2);
+      el.width = Math.max(1, Math.abs(x2 - x1)); el.height = Math.max(1, Math.abs(y2 - y1));
+      touch(el);
+      refreshBoundArrows();
+      pointer.changed = true;
+      break;
+    }
+    case 'marquee': {
+      pointer.cur = p;
+      const r = rectFrom(pointer.start, p);
+      const next = new Set(pointer.base);
+      for (const el of elements) {
+        const b = boundsOf(el);
+        if (b.x >= r.x && b.y >= r.y && b.x + b.w <= r.x + r.w && b.y + b.h <= r.y + r.h) next.add(el.id);
+      }
+      selected = next;
+      onSelectionChange();
+      break;
+    }
+  }
+  requestRender();
+});
+
+window.addEventListener('pointerup', () => {
+  if (!pointer) return;
+  const pm = pointer;
+  pointer = null;
+  switch (pm.mode) {
+    case 'pan':
+      setCursor(spaceDown || app.tool === 'hand' ? 'grab' : 'default');
+      saveSoon();
+      break;
+    case 'create': {
+      const el = pm.el;
+      if (el.width < 3 && el.height < 3) {
+        removeElements(new Set([el.id]), false);
+      } else {
+        finishTool();
+        commit();
+      }
+      break;
+    }
+    case 'createArrow': {
+      const el = pm.el;
+      if (hoverBind) el.endBinding = { elementId: hoverBind.id };
+      hoverBind = null;
+      updateArrow(el);
+      const [a, b] = arrowEnds(el);
+      if (Math.hypot(b.x - a.x, b.y - a.y) < MIN_ARROW_LENGTH) {
+        removeElements(new Set([el.id]), false);
+      } else {
+        finishTool();
+        commit();
+      }
+      break;
+    }
+    case 'arrowEnd': {
+      const el = pm.el;
+      if (hoverBind) el[pm.end === 0 ? 'startBinding' : 'endBinding'] = { elementId: hoverBind.id };
+      hoverBind = null;
+      updateArrow(el);
+      if (pm.changed) commit();
+      break;
+    }
+    case 'move':
+      if (pm.changed) commit();
+      break;
+    case 'resize':
+      if (pm.changed) { fitLabel(pm.el); refreshBoundArrows(); commit(); }
+      break;
+  }
+  onSelectionChange();
+  requestRender();
+});
+
+canvas.addEventListener('dblclick', (e) => {
+  if (app.tool !== 'selection') return;
+  const p = toScene(e.clientX, e.clientY);
+  const hit = elementAt(p);
+  if (hit && (SHAPES.has(hit.type) || hit.type === 'text')) startEditing(hit);
+  else if (!hit) createTextAt(p);
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (e.ctrlKey || e.metaKey) {
+    zoomAt(app.zoom * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
+    return;
+  }
+  let dx = e.deltaX, dy = e.deltaY;
+  if (e.shiftKey && !dx) { dx = dy; dy = 0; }
+  app.scrollX -= dx / app.zoom;
+  app.scrollY -= dy / app.zoom;
+  requestRender();
+  saveSoon();
+}, { passive: false });
+
+function finishTool() {
+  if (!app.toolLocked) setTool('selection');
+}
+
+/* ------------------------------------------------------------------ *
+ * Text editing
+ * ------------------------------------------------------------------ */
+const editor = $('#text-editor');
+function createTextAt(p) {
+  const el = createElement('text', p.x, p.y - (app.style.fontSize * LINE_HEIGHT) / 2);
+  el.width = 1;
+  el.height = el.fontSize * LINE_HEIGHT;
+  elements.push(el);
+  startEditing(el);
+}
+function startEditing(el) {
+  if (editing) finishEditing();
+  editing = el;
+  selected = new Set([el.id]);
+  if (el.fontSize == null) el.fontSize = app.style.fontSize;
+  editor.value = el.text || '';
+  editor.hidden = false;
+  onSelectionChange();
+  render();
+  const focusEditor = () => {
+    if (editing !== el || document.activeElement === editor) return;
+    editor.focus({ preventScroll: true });
+    editor.setSelectionRange(editor.value.length, editor.value.length);
+  };
+  focusEditor();
+  // a pointerdown that started editing may still move focus back to the canvas
+  setTimeout(focusEditor, 0);
+}
+function positionEditor() {
+  if (!editing) return;
+  const el = editing, z = app.zoom;
+  const fs = el.fontSize * z;
+  editor.style.fontSize = `${fs}px`;
+  editor.style.color = el.strokeColor;
+  editor.style.opacity = String((el.opacity ?? 100) / 100);
+  if (el.type === 'text') {
+    measureCtx.font = fontFor(el.fontSize);
+    const lines = editor.value.split('\n');
+    const w = Math.max(...lines.map((l) => measureCtx.measureText(l).width), 1);
+    editor.style.whiteSpace = 'pre';
+    editor.style.textAlign = 'left';
+    editor.style.width = `${w * z + fs}px`;
+    editor.style.height = `${lines.length * fs * LINE_HEIGHT}px`;
+    editor.style.left = `${(el.x + app.scrollX) * z}px`;
+    editor.style.top = `${(el.y + app.scrollY) * z}px`;
+  } else {
+    const maxW = labelMaxWidth(el);
+    const lines = wrapLines(editor.value || ' ', el.fontSize, maxW);
+    const h = lines.length * fs * LINE_HEIGHT;
+    const c = center(el);
+    editor.style.whiteSpace = 'pre-wrap';
+    editor.style.textAlign = 'center';
+    editor.style.width = `${maxW * z}px`;
+    editor.style.height = `${h}px`;
+    editor.style.left = `${(c.x + app.scrollX) * z - (maxW * z) / 2}px`;
+    editor.style.top = `${(c.y + app.scrollY) * z - h / 2}px`;
+  }
+}
+function finishEditing() {
+  const el = editing;
+  if (!el) return;
+  editing = null;
+  editor.hidden = true;
+  const value = editor.value.replace(/\s+$/, '');
+  if (el.type === 'text') {
+    if (!value.trim()) {
+      elements = elements.filter((x) => x !== el);
+      selected.delete(el.id);
+    } else {
+      el.text = value;
+      el.originalText = value;
+      measureFreeText(el);
+      touch(el);
+    }
+  } else {
+    el.text = value;
+    touch(el);
+    fitLabel(el);
+    refreshBoundArrows();
+  }
+  commit();
+  onSelectionChange();
+  requestRender();
+  canvas.focus({ preventScroll: true });
+}
+editor.addEventListener('input', () => {
+  if (editing && editing.type === 'text') {
+    editing.text = editor.value;
+  }
+  positionEditor();
+});
+editor.addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
+    e.preventDefault();
+    finishEditing();
+  }
+});
+editor.addEventListener('blur', () => { if (editing) finishEditing(); });
+
+/* ------------------------------------------------------------------ *
+ * Editing commands
+ * ------------------------------------------------------------------ */
+function removeElements(ids, record = true) {
+  elements = elements.filter((e) => !ids.has(e.id));
+  for (const el of elements) {
+    if (el.type !== 'arrow') continue;
+    if (el.startBinding && ids.has(el.startBinding.elementId)) el.startBinding = null;
+    if (el.endBinding && ids.has(el.endBinding.elementId)) el.endBinding = null;
+  }
+  selected = new Set([...selected].filter((id) => !ids.has(id)));
+  if (record) commit();
+  onSelectionChange();
+  requestRender();
+}
+function cloneElements(list, dx, dy) {
+  const idMap = new Map(list.map((el) => [el.id, uid()]));
+  return list.map((el) => {
+    const c = JSON.parse(JSON.stringify(el));
+    c.id = idMap.get(el.id);
+    c.x += dx; c.y += dy;
+    c.version = 1; c.versionNonce = randInt(); c.updated = Date.now();
+    delete c.labelId;
+    if (c.type === 'arrow') {
+      for (const key of ['startBinding', 'endBinding']) {
+        c[key] = c[key] && idMap.has(c[key].elementId) ? { elementId: idMap.get(c[key].elementId) } : null;
+      }
+    }
+    return c;
+  });
+}
+function insertElements(list) {
+  elements.push(...list);
+  selected = new Set(list.map((e) => e.id));
+  refreshBoundArrows();
+  commit();
+  onSelectionChange();
+  requestRender();
+}
+function duplicateSelection() {
+  const sel = selectedEls();
+  if (sel.length) insertElements(cloneElements(sel, 10, 10));
+}
+function reorder(kind) {
+  if (!selected.size) return;
+  const inSel = (e) => selected.has(e.id);
+  if (kind === 'front') elements = [...elements.filter((e) => !inSel(e)), ...elements.filter(inSel)];
+  if (kind === 'back') elements = [...elements.filter(inSel), ...elements.filter((e) => !inSel(e))];
+  if (kind === 'forward') {
+    for (let i = elements.length - 2; i >= 0; i--) {
+      if (inSel(elements[i]) && !inSel(elements[i + 1])) [elements[i], elements[i + 1]] = [elements[i + 1], elements[i]];
+    }
+  }
+  if (kind === 'backward') {
+    for (let i = 1; i < elements.length; i++) {
+      if (inSel(elements[i]) && !inSel(elements[i - 1])) [elements[i], elements[i - 1]] = [elements[i - 1], elements[i]];
+    }
+  }
+  commit();
+  requestRender();
+}
+function nudge(dx, dy) {
+  const sel = selectedEls();
+  if (!sel.length) return;
+  const ids = new Set(sel.map((e) => e.id));
+  for (const el of sel) {
+    el.x += dx; el.y += dy; touch(el);
+    if (el.type === 'arrow') {
+      if (el.startBinding && !ids.has(el.startBinding.elementId)) el.startBinding = null;
+      if (el.endBinding && !ids.has(el.endBinding.elementId)) el.endBinding = null;
+    }
+  }
+  refreshBoundArrows();
+  commit();
+  requestRender();
+}
+
+/* ------------------------------------------------------------------ *
+ * History
+ * ------------------------------------------------------------------ */
+const history = { stack: [], index: -1 };
+function commit() {
+  const snap = JSON.stringify(elements);
+  if (history.stack[history.index] !== snap) {
+    history.stack = history.stack.slice(0, history.index + 1);
+    history.stack.push(snap);
+    if (history.stack.length > 200) history.stack.shift();
+    history.index = history.stack.length - 1;
+  }
+  updateUndoButtons();
+  saveSoon();
+}
+function restoreHistory() {
+  elements = JSON.parse(history.stack[history.index]);
+  selected = new Set([...selected].filter((id) => getEl(id)));
+  updateUndoButtons();
+  onSelectionChange();
+  requestRender();
+  saveSoon();
+}
+function undo() {
+  if (editing) finishEditing();
+  if (history.index <= 0) return;
+  history.index--;
+  restoreHistory();
+}
+function redo() {
+  if (history.index >= history.stack.length - 1) return;
+  history.index++;
+  restoreHistory();
+}
+function updateUndoButtons() {
+  $('#undo-btn').disabled = history.index <= 0;
+  $('#redo-btn').disabled = history.index >= history.stack.length - 1;
+}
+
+/* ------------------------------------------------------------------ *
+ * Persistence: browser storage + .excalidraw files
+ * ------------------------------------------------------------------ */
+let saveTimer = 0;
+function saveSoon() {
+  setStatus('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveLocal, 300);
+}
+function saveLocal() {
+  clearTimeout(saveTimer);
+  try {
+    localStorage.setItem(STORAGE_ELEMENTS, JSON.stringify(elements));
+    localStorage.setItem(STORAGE_STATE, JSON.stringify({
+      scrollX: app.scrollX, scrollY: app.scrollY, zoom: app.zoom, theme: app.theme,
+      viewBackgroundColor: app.viewBackgroundColor, style: app.style, name: app.name,
+      toolLocked: app.toolLocked,
+    }));
+    setStatus('saved');
+  } catch (err) {
+    setStatus('error');
+  }
+}
+function loadLocal() {
+  try {
+    const els = JSON.parse(localStorage.getItem(STORAGE_ELEMENTS) || '[]');
+    if (Array.isArray(els)) elements = els.filter((e) => e && e.id && e.type);
+    const st = JSON.parse(localStorage.getItem(STORAGE_STATE) || 'null');
+    if (st) {
+      Object.assign(app, {
+        scrollX: +st.scrollX || 0, scrollY: +st.scrollY || 0, zoom: clamp(+st.zoom || 1, 0.1, 30),
+        theme: st.theme === 'dark' ? 'dark' : 'light',
+        viewBackgroundColor: st.viewBackgroundColor || '#ffffff',
+        name: st.name || app.name, toolLocked: !!st.toolLocked,
+      });
+      app.style = { ...DEFAULT_STYLE, ...(st.style || {}) };
+    }
+  } catch (err) {
+    elements = [];
+  }
+}
+function setStatus(state) {
+  const el = $('#status');
+  el.dataset.state = state;
+  el.querySelector('.label').textContent =
+    state === 'saving' ? 'Saving…' : state === 'error' ? 'Browser storage full or blocked' : 'Saved in browser';
+}
+
+function labelElementFor(el) {
+  const lines = wrapLines(el.text, el.fontSize, labelMaxWidth(el));
+  measureCtx.font = fontFor(el.fontSize);
+  const w = Math.max(...lines.map((l) => measureCtx.measureText(l).width), 1);
+  const h = lines.length * el.fontSize * LINE_HEIGHT;
+  const c = center(el);
+  if (!el.labelId) el.labelId = uid();
+  return {
+    id: el.labelId, type: 'text', x: c.x - w / 2, y: c.y - h / 2, width: w, height: h, angle: el.angle || 0,
+    strokeColor: el.strokeColor, backgroundColor: 'transparent', fillStyle: el.fillStyle,
+    strokeWidth: el.strokeWidth, strokeStyle: el.strokeStyle, roughness: el.roughness, opacity: el.opacity,
+    groupIds: [], frameId: null, index: null, roundness: null, seed: el.seed, version: el.version,
+    versionNonce: el.versionNonce, isDeleted: false, boundElements: null, updated: el.updated,
+    link: null, locked: false, text: lines.join('\n'), fontSize: el.fontSize, fontFamily: 1,
+    textAlign: 'center', verticalAlign: 'middle', containerId: el.id, originalText: el.text,
+    autoResize: true, lineHeight: LINE_HEIGHT,
+  };
+}
+function toExcalidrawElements(list) {
+  const out = [];
+  const ids = new Set(list.map((e) => e.id));
+  for (const el of list) {
+    const { text, fontSize, labelId, ...rest } = el;
+    const e = JSON.parse(JSON.stringify(rest));
+    if (SHAPES.has(el.type)) {
+      const bound = list
+        .filter((a) => a.type === 'arrow' && ((a.startBinding && a.startBinding.elementId === el.id) || (a.endBinding && a.endBinding.elementId === el.id)))
+        .map((a) => ({ id: a.id, type: 'arrow' }));
+      const label = text ? labelElementFor(el) : null;
+      if (label) bound.push({ id: label.id, type: 'text' });
+      e.boundElements = bound.length ? bound : null;
+      out.push(e);
+      if (label) out.push(label);
+    } else if (el.type === 'arrow') {
+      for (const key of ['startBinding', 'endBinding']) {
+        const b = el[key];
+        const target = b && ids.has(b.elementId) ? getEl(b.elementId) : null;
+        e[key] = target ? { elementId: target.id, focus: 0, gap: bindingGap(target), fixedPoint: [0.5, 0.5], mode: 'orbit' } : null;
+      }
+      out.push(e);
+    } else {
+      e.text = text; e.originalText = text; e.fontSize = fontSize;
+      out.push(e);
+    }
+  }
+  return out;
+}
+function serialize() {
+  return {
+    type: 'excalidraw',
+    version: 2,
+    source: location.origin && location.origin !== 'null' ? location.origin : 'sketchboard',
+    elements: toExcalidrawElements(elements),
+    appState: { gridSize: 20, gridStep: 5, gridModeEnabled: false, viewBackgroundColor: app.viewBackgroundColor },
+    files: {},
+  };
+}
+function normalizeArrowhead(h) {
+  if (!h) return null;
+  return String(h).includes('triangle') ? 'triangle' : 'arrow';
+}
+function importExcalidrawElements(raw) {
+  const live = raw.filter((e) => e && !e.isDeleted && e.id && e.type);
+  const byId = new Map(live.map((e) => [e.id, e]));
+  const out = [];
+  let skipped = 0;
+  const base = (e) => ({
+    id: e.id, type: e.type, x: +e.x || 0, y: +e.y || 0, width: Math.abs(+e.width || 0), height: Math.abs(+e.height || 0),
+    angle: +e.angle || 0, strokeColor: e.strokeColor || '#1e1e1e', backgroundColor: e.backgroundColor || 'transparent',
+    fillStyle: ['hachure', 'cross-hatch', 'solid'].includes(e.fillStyle) ? e.fillStyle : 'solid',
+    strokeWidth: +e.strokeWidth || 2, strokeStyle: ['solid', 'dashed', 'dotted'].includes(e.strokeStyle) ? e.strokeStyle : 'solid',
+    roughness: e.roughness ?? 1, opacity: e.opacity ?? 100, groupIds: [], frameId: null, index: null,
+    roundness: e.roundness || null, seed: e.seed || randInt(), version: e.version || 1, versionNonce: e.versionNonce || randInt(),
+    isDeleted: false, boundElements: null, updated: e.updated || Date.now(), link: e.link || null, locked: false,
+  });
+  for (const e of live) {
+    if (e.type === 'text' && e.containerId && byId.has(e.containerId) && SHAPES.has(byId.get(e.containerId).type)) continue;
+    if (SHAPES.has(e.type)) {
+      const el = base(e);
+      if (e.type === 'ellipse') el.roundness = null;
+      const label = live.find((t) => t.type === 'text' && t.containerId === e.id);
+      if (label) {
+        el.text = label.originalText ?? label.text ?? '';
+        el.fontSize = +label.fontSize || 20;
+        el.labelId = label.id;
+        if (label.strokeColor) el.strokeColor = el.strokeColor || label.strokeColor;
+      }
+      out.push(el);
+    } else if (e.type === 'arrow' || e.type === 'line') {
+      const pts = Array.isArray(e.points) && e.points.length >= 2 ? e.points : [[0, 0], [e.width || 0, e.height || 0]];
+      const first = pts[0], last = pts[pts.length - 1];
+      const el = base(e);
+      el.type = 'arrow';
+      el.roundness = null;
+      el.x = (+e.x || 0) + first[0];
+      el.y = (+e.y || 0) + first[1];
+      el.points = [[0, 0], [last[0] - first[0], last[1] - first[1]]];
+      el.width = Math.abs(el.points[1][0]);
+      el.height = Math.abs(el.points[1][1]);
+      el.startArrowhead = normalizeArrowhead(e.startArrowhead);
+      el.endArrowhead = e.type === 'line' ? normalizeArrowhead(e.endArrowhead) : (e.endArrowhead === undefined ? 'arrow' : normalizeArrowhead(e.endArrowhead));
+      el.startBinding = e.startBinding && e.startBinding.elementId ? { elementId: e.startBinding.elementId } : null;
+      el.endBinding = e.endBinding && e.endBinding.elementId ? { elementId: e.endBinding.elementId } : null;
+      el.elbowed = false;
+      el.lastCommittedPoint = null;
+      out.push(el);
+    } else if (e.type === 'text') {
+      const el = base(e);
+      Object.assign(el, {
+        text: e.originalText ?? e.text ?? '', originalText: e.originalText ?? e.text ?? '', fontSize: +e.fontSize || 20,
+        fontFamily: 1, textAlign: 'left', verticalAlign: 'top', containerId: null, lineHeight: LINE_HEIGHT, autoResize: true,
+      });
+      measureFreeText(el);
+      out.push(el);
+    } else {
+      skipped++;
+    }
+  }
+  const shapeIds = new Set(out.filter((e) => SHAPES.has(e.type)).map((e) => e.id));
+  for (const el of out) {
+    if (el.type !== 'arrow') continue;
+    if (el.startBinding && !shapeIds.has(el.startBinding.elementId)) el.startBinding = null;
+    if (el.endBinding && !shapeIds.has(el.endBinding.elementId)) el.endBinding = null;
+  }
+  return { list: out, skipped };
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const safeName = () => (app.name || 'drawing').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'drawing';
+
+async function saveToFile(saveAs = false) {
+  if (editing) finishEditing();
+  saveLocal();
+  const json = JSON.stringify(serialize(), null, 2);
+  const filename = `${safeName()}.excalidraw`;
+  try {
+    if (window.showSaveFilePicker) {
+      if (!fileHandle || saveAs) {
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: 'Excalidraw drawing', accept: { 'application/json': ['.excalidraw'] } }],
+        });
+      }
+      const writable = await fileHandle.createWritable();
+      await writable.write(json);
+      await writable.close();
+      app.name = fileHandle.name.replace(/\.(excalidraw|json)$/i, '');
+      $('#doc-name').value = app.name;
+      saveLocal();
+      toast(`Saved to ${fileHandle.name}`);
+    } else {
+      downloadBlob(new Blob([json], { type: 'application/json' }), filename);
+      toast(`Downloaded ${filename}`);
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+    if (err && err.name === 'SecurityError') {
+      downloadBlob(new Blob([json], { type: 'application/json' }), filename);
+      toast(`Downloaded ${filename}`);
+      return;
+    }
+    toast(`Save failed: ${err && err.message ? err.message : err}`);
+  }
+}
+async function openFile() {
+  try {
+    if (window.showOpenFilePicker) {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: 'Excalidraw drawing', accept: { 'application/json': ['.excalidraw', '.json'] } }],
+      });
+      await loadFromFile(await handle.getFile(), handle);
+    } else {
+      $('#file-input').click();
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+    if (err && err.name === 'SecurityError') { $('#file-input').click(); return; }
+    toast('Could not open that file');
+  }
+}
+async function loadFromFile(file, handle = null) {
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+  } catch (err) {
+    toast('That file is not a valid drawing');
+    return;
+  }
+  if (!data || data.type !== 'excalidraw' || !Array.isArray(data.elements)) {
+    toast('That file is not a .excalidraw drawing');
+    return;
+  }
+  if (elements.length && !confirm('Replace the current drawing with this file? Your current drawing will be lost unless you saved it.')) return;
+  if (editing) finishEditing();
+  const { list, skipped } = importExcalidrawElements(data.elements);
+  elements = list;
+  refreshBoundArrows();
+  selected = new Set();
+  app.viewBackgroundColor = (data.appState && data.appState.viewBackgroundColor) || '#ffffff';
+  app.name = file.name.replace(/\.(excalidraw|json)$/i, '');
+  $('#doc-name').value = app.name;
+  fileHandle = handle;
+  zoomToFit();
+  commit();
+  syncCanvasSwatches();
+  onSelectionChange();
+  toast(`Opened ${file.name}${skipped ? ` · ${skipped} unsupported element${skipped > 1 ? 's' : ''} skipped` : ''}`);
+}
+function exportPng() {
+  if (editing) finishEditing();
+  const list = selected.size ? selectedEls() : elements;
+  if (!list.length) { toast('Nothing to export yet'); return; }
+  const b = boundsOfAll(list);
+  const pad = 20, scale = 2;
+  const out = document.createElement('canvas');
+  out.width = Math.ceil((b.w + pad * 2) * scale);
+  out.height = Math.ceil((b.h + pad * 2) * scale);
+  const c = out.getContext('2d');
+  c.scale(scale, scale);
+  c.fillStyle = app.viewBackgroundColor;
+  c.fillRect(0, 0, b.w + pad * 2, b.h + pad * 2);
+  c.translate(pad - b.x, pad - b.y);
+  const roughOut = rough.canvas(out);
+  for (const el of list) drawElement(c, roughOut, el, false);
+  out.toBlob((blob) => {
+    if (!blob) { toast('Export failed'); return; }
+    downloadBlob(blob, `${safeName()}.png`);
+    toast(`Exported ${safeName()}.png`);
+  }, 'image/png');
+}
+
+/* Clipboard: uses the same JSON shape as Excalidraw, so copy/paste works between the two apps. */
+document.addEventListener('copy', (e) => {
+  if (isTyping(e.target) || !selected.size) return;
+  e.preventDefault();
+  e.clipboardData.setData('text/plain', JSON.stringify({ type: 'excalidraw/clipboard', elements: toExcalidrawElements(selectedEls()), files: {} }));
+});
+document.addEventListener('cut', (e) => {
+  if (isTyping(e.target) || !selected.size) return;
+  e.preventDefault();
+  e.clipboardData.setData('text/plain', JSON.stringify({ type: 'excalidraw/clipboard', elements: toExcalidrawElements(selectedEls()), files: {} }));
+  removeElements(new Set(selected));
+});
+document.addEventListener('paste', (e) => {
+  if (isTyping(e.target)) return;
+  const text = e.clipboardData.getData('text/plain');
+  if (!text) return;
+  let data = null;
+  try { data = JSON.parse(text); } catch (err) { data = null; }
+  e.preventDefault();
+  if (data && (data.type === 'excalidraw/clipboard' || data.type === 'excalidraw') && Array.isArray(data.elements)) {
+    const { list } = importExcalidrawElements(data.elements);
+    if (!list.length) return;
+    const b = boundsOfAll(list);
+    insertElements(cloneElements(list, lastPointer.x - (b.x + b.w / 2), lastPointer.y - (b.y + b.h / 2)));
+  } else {
+    // plain text becomes a text element at the pointer
+    const el = createElement('text', lastPointer.x, lastPointer.y);
+    el.text = text.replace(/\r\n/g, '\n');
+    el.originalText = el.text;
+    measureFreeText(el);
+    insertElements([el]);
+  }
+});
+
+/* ------------------------------------------------------------------ *
+ * UI wiring
+ * ------------------------------------------------------------------ */
+function setTool(tool) {
+  if (editing && tool !== 'selection') finishEditing();
+  app.tool = tool;
+  if (tool !== 'selection' && tool !== 'hand') selected = new Set();
+  for (const b of $$('[data-tool]')) b.classList.toggle('active', b.dataset.tool === tool);
+  setCursor(tool === 'hand' ? 'grab' : tool === 'selection' ? 'default' : tool === 'text' ? 'text' : 'crosshair');
+  onSelectionChange();
+  requestRender();
+}
+function setToolLocked(v) {
+  app.toolLocked = v;
+  const b = $('#lock-btn');
+  b.classList.toggle('active', v);
+  b.innerHTML = svgIcon(v ? 'lock' : 'unlock');
+  saveSoon();
+}
+
+function updateHint() {
+  const sel = selectedEls();
+  let html = '';
+  if (editing) html = '<kbd>Esc</kbd> or click outside to finish';
+  else if (app.tool === 'hand') html = 'Drag to move around the canvas';
+  else if (SHAPES.has(app.tool)) html = 'Click and drag to draw · hold <kbd>Shift</kbd> for a perfect shape';
+  else if (app.tool === 'arrow') html = 'Drag from one shape to another to connect them';
+  else if (app.tool === 'text') html = 'Click anywhere to add text, or click a shape to label it';
+  else if (sel.length === 1 && SHAPES.has(sel[0].type)) html = '<kbd>Enter</kbd> or double-click to add text · drag a corner to resize';
+  else if (sel.length === 1 && sel[0].type === 'arrow') html = 'Drag an end onto a shape to connect it';
+  else if (!sel.length && elements.length) html = 'To move canvas, hold <kbd>Space</kbd> while dragging, or scroll';
+  $('#hint').innerHTML = html;
+}
+
+function currentValues(sel) {
+  const src = sel[0] || null;
+  const v = { ...app.style };
+  if (src) {
+    for (const k of ['strokeColor', 'strokeWidth', 'strokeStyle', 'roughness', 'opacity']) if (src[k] !== undefined) v[k] = src[k];
+    const shape = sel.find((e) => SHAPES.has(e.type));
+    if (shape) { v.backgroundColor = shape.backgroundColor; v.fillStyle = shape.fillStyle; }
+    const edged = sel.find((e) => e.type === 'rectangle' || e.type === 'diamond');
+    if (edged) v.edges = edged.roundness ? 'round' : 'sharp';
+    const arrow = sel.find((e) => e.type === 'arrow');
+    if (arrow) { v.startArrowhead = arrow.startArrowhead; v.endArrowhead = arrow.endArrowhead; }
+    const texty = sel.find((e) => e.type === 'text' || (SHAPES.has(e.type) && e.text));
+    if (texty) v.fontSize = texty.fontSize;
+  }
+  return v;
+}
+function onSelectionChange() {
+  const sel = selectedEls();
+  const tool = app.tool;
+  const show = sel.length > 0 || DRAW_TOOLS.has(tool);
+  const panel = $('#panel');
+  panel.hidden = !show;
+  updateHint();
+  if (!show) { closePopovers(); return; }
+  const types = new Set(sel.length ? sel.map((e) => e.type) : [tool]);
+  const hasShape = [...types].some((t) => SHAPES.has(t));
+  const hasArrow = types.has('arrow');
+  const hasEdges = types.has('rectangle') || types.has('diamond');
+  const hasText = types.has('text') || sel.some((e) => SHAPES.has(e.type) && e.text);
+  const vis = {
+    stroke: true, background: hasShape, fill: hasShape,
+    strokeWidth: hasShape || hasArrow, strokeStyle: hasShape || hasArrow, roughness: hasShape || hasArrow,
+    edges: hasEdges, arrowheads: hasArrow, fontSize: hasText, opacity: true,
+    layers: sel.length > 0, actions: sel.length > 0,
+  };
+  for (const s of $$('#panel section')) s.hidden = !vis[s.dataset.section];
+  const v = currentValues(sel);
+  for (const b of $$('#panel [data-prop]')) {
+    const val = v[b.dataset.prop];
+    b.classList.toggle('active', String(val) === b.dataset.value);
+  }
+  for (const box of $$('[data-swatches]')) renderSwatches(box, box.dataset.swatches, v[box.dataset.swatches]);
+  $('#opacity').value = v.opacity;
+  $('#opacity-out').textContent = v.opacity;
+}
+
+function swatchButton(color, active, title) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'swatch' + (active ? ' active' : '');
+  b.title = title || color;
+  b.setAttribute('aria-label', title || color);
+  const f = document.createElement('span');
+  f.className = 'fill' + (color === 'transparent' ? ' transparent' : '');
+  if (color !== 'transparent') f.style.background = color;
+  b.appendChild(f);
+  return b;
+}
+function renderSwatches(box, prop, value) {
+  box.innerHTML = '';
+  for (const c of QUICK_PICKS[prop]) {
+    const b = swatchButton(c, c === value, c === 'transparent' ? 'Transparent' : c);
+    b.addEventListener('click', () => { applyProp(prop, c); commit(); });
+    box.appendChild(b);
+  }
+  const sep = document.createElement('span');
+  sep.className = 'swatch-sep';
+  box.appendChild(sep);
+  const more = swatchButton(value, false, 'More colors…');
+  more.classList.add('more');
+  more.addEventListener('click', (e) => { e.stopPropagation(); openPalette(prop, more); });
+  box.appendChild(more);
+}
+
+function parseValue(prop, raw) {
+  if (raw === 'null') return null;
+  if (['strokeWidth', 'roughness', 'opacity', 'fontSize'].includes(prop)) return Number(raw);
+  return raw;
+}
+function applyProp(prop, value) {
+  app.style[prop] = value;
+  for (const el of selectedEls()) {
+    switch (prop) {
+      case 'edges':
+        if (el.type === 'rectangle' || el.type === 'diamond') el.roundness = value === 'round' ? { type: el.type === 'rectangle' ? 3 : 2 } : null;
+        break;
+      case 'backgroundColor':
+      case 'fillStyle':
+        if (SHAPES.has(el.type)) el[prop] = value;
+        break;
+      case 'startArrowhead':
+      case 'endArrowhead':
+        if (el.type === 'arrow') el[prop] = value;
+        break;
+      case 'fontSize':
+        if (el.type === 'text') { el.fontSize = value; measureFreeText(el); }
+        else if (SHAPES.has(el.type)) { el.fontSize = value; fitLabel(el); }
+        break;
+      case 'strokeWidth':
+      case 'strokeStyle':
+      case 'roughness':
+        if (el.type !== 'text') el[prop] = value;
+        break;
+      default:
+        el[prop] = value;
+    }
+    touch(el);
+  }
+  refreshBoundArrows();
+  onSelectionChange();
+  requestRender();
+  if (!selected.size) saveSoon();
+}
+
+/* Color popover */
+function openPalette(prop, anchor) {
+  const pop = $('#palette');
+  if (!pop.hidden && paletteFor === prop) { closePopovers(); return; }
+  paletteFor = prop;
+  $('#palette-title').textContent = prop === 'strokeColor' ? 'Stroke color' : 'Background color';
+  const value = currentValues(selectedEls())[prop];
+  const grid = $('#palette-grid');
+  grid.innerHTML = '';
+  const hues = Object.keys(PALETTE);
+  const baseIndex = prop === 'strokeColor' ? 4 : 1;
+  const choices = prop === 'backgroundColor'
+    ? ['transparent', '#ffffff', ...hues.map((h) => PALETTE[h][baseIndex])]
+    : ['#1e1e1e', '#ffffff', ...hues.map((h) => PALETTE[h][baseIndex])];
+  for (const c of choices.slice(0, 12)) {
+    const b = swatchButton(c, c === value, c === 'transparent' ? 'Transparent' : c);
+    b.addEventListener('click', () => { pickColor(c); });
+    grid.appendChild(b);
+  }
+  renderShades(value);
+  const hex = $('#hex-input');
+  hex.value = value === 'transparent' ? '' : value.replace('#', '');
+  $('#hex-preview').style.background = value === 'transparent' ? 'transparent' : value;
+  pop.hidden = false;
+  const r = anchor.getBoundingClientRect();
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let left = r.right + 12, top = r.top - 8;
+  if (left + pw > window.innerWidth - 8) left = Math.max(8, r.left - pw - 12);
+  if (left < 8 || window.innerWidth < 760) left = clamp(r.left, 8, window.innerWidth - pw - 8);
+  if (window.innerWidth < 760) top = r.top - ph - 8;
+  top = clamp(top, 8, window.innerHeight - ph - 8);
+  pop.style.left = `${left}px`;
+  pop.style.top = `${top}px`;
+}
+function renderShades(value) {
+  const shades = $('#palette-shades');
+  shades.innerHTML = '';
+  const hue = Object.keys(PALETTE).find((h) => PALETTE[h].includes(value));
+  const row = hue ? PALETTE[hue] : PALETTE.gray;
+  row.forEach((c) => {
+    const b = swatchButton(c, c === value, c);
+    b.addEventListener('click', () => pickColor(c));
+    shades.appendChild(b);
+  });
+}
+function pickColor(c) {
+  if (!paletteFor) return;
+  applyProp(paletteFor, c);
+  commit();
+  const value = c;
+  for (const b of $$('#palette-grid .swatch, #palette-shades .swatch')) b.classList.remove('active');
+  renderShades(value);
+  $('#hex-input').value = value === 'transparent' ? '' : value.replace('#', '');
+  $('#hex-preview').style.background = value;
+}
+$('#hex-input').addEventListener('input', (e) => {
+  const v = e.target.value.trim().replace(/^#/, '');
+  if (/^([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v)) {
+    $('#hex-preview').style.background = `#${v}`;
+    if (paletteFor) { applyProp(paletteFor, `#${v.toLowerCase()}`); }
+  }
+});
+$('#hex-input').addEventListener('change', () => commit());
+$('#hex-input').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === 'Escape') closePopovers(); });
+
+function closePopovers() {
+  $('#palette').hidden = true;
+  paletteFor = null;
+  $('#menu').hidden = true;
+  $('#menu-btn').setAttribute('aria-expanded', 'false');
+}
+document.addEventListener('pointerdown', (e) => {
+  if (e.target === canvas) return;
+  if (!e.target.closest('#palette') && !e.target.closest('.swatch.more')) { $('#palette').hidden = true; paletteFor = null; }
+  if (!e.target.closest('.menu-wrap')) { $('#menu').hidden = true; $('#menu-btn').setAttribute('aria-expanded', 'false'); }
+});
+
+function syncCanvasSwatches() {
+  const box = $('#canvas-swatches');
+  box.innerHTML = '';
+  for (const c of CANVAS_PICKS) {
+    const b = swatchButton(c, c === app.viewBackgroundColor, c);
+    b.addEventListener('click', () => {
+      app.viewBackgroundColor = c;
+      syncCanvasSwatches();
+      requestRender();
+      saveSoon();
+    });
+    box.appendChild(b);
+  }
+}
+function applyTheme() {
+  document.documentElement.dataset.theme = app.theme;
+  $('#theme-icon').innerHTML = svgIcon(app.theme === 'dark' ? 'sun' : 'moon');
+  $('#theme-label').textContent = app.theme === 'dark' ? 'Light mode' : 'Dark mode';
+}
+function toggleTheme() {
+  app.theme = app.theme === 'dark' ? 'light' : 'dark';
+  applyTheme();
+  saveSoon();
+}
+
+let toastTimer = 0;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function runAction(action) {
+  closePopovers();
+  switch (action) {
+    case 'open': openFile(); break;
+    case 'save': saveToFile(false); break;
+    case 'saveAs': saveToFile(true); break;
+    case 'exportPng': exportPng(); break;
+    case 'help': $('#help-dialog').showModal(); break;
+    case 'theme': toggleTheme(); break;
+    case 'duplicate': duplicateSelection(); break;
+    case 'delete': removeElements(new Set(selected)); break;
+    case 'reset':
+      if (elements.length && confirm('Clear the whole canvas? You can undo this with Ctrl+Z.')) {
+        if (editing) finishEditing();
+        elements = [];
+        selected = new Set();
+        fileHandle = null;
+        commit();
+        onSelectionChange();
+        requestRender();
+      }
+      break;
+  }
+}
+
+function initUI() {
+  for (const el of $$('[data-icon]')) {
+    el.insertAdjacentHTML('afterbegin', svgIcon(el.dataset.icon));
+  }
+  for (const b of $$('[data-tool]')) {
+    if (b.dataset.kbd) b.insertAdjacentHTML('beforeend', `<span class="kbd">${b.dataset.kbd}</span>`);
+    b.addEventListener('click', () => setTool(b.dataset.tool));
+  }
+  $('#lock-btn').addEventListener('click', () => setToolLocked(!app.toolLocked));
+  for (const b of $$('#panel [data-prop]')) {
+    b.addEventListener('click', () => { applyProp(b.dataset.prop, parseValue(b.dataset.prop, b.dataset.value)); commit(); });
+  }
+  for (const b of $$('[data-layer]')) b.addEventListener('click', () => reorder(b.dataset.layer));
+  for (const b of $$('[data-action]')) b.addEventListener('click', () => runAction(b.dataset.action));
+  $('#opacity').addEventListener('input', (e) => { $('#opacity-out').textContent = e.target.value; applyProp('opacity', Number(e.target.value)); });
+  $('#opacity').addEventListener('change', () => commit());
+  $('#menu-btn').addEventListener('click', () => {
+    const m = $('#menu');
+    m.hidden = !m.hidden;
+    $('#menu-btn').setAttribute('aria-expanded', String(!m.hidden));
+    $('#palette').hidden = true;
+  });
+  $('#save-btn').addEventListener('click', () => saveToFile(false));
+  $('#help-btn').addEventListener('click', () => $('#help-dialog').showModal());
+  $('#help-close').addEventListener('click', () => $('#help-dialog').close());
+  $('#zoom-in').addEventListener('click', () => zoomStep(1));
+  $('#zoom-out').addEventListener('click', () => zoomStep(-1));
+  $('#zoom-label').addEventListener('click', () => zoomAt(1, window.innerWidth / 2, window.innerHeight / 2));
+  $('#undo-btn').addEventListener('click', undo);
+  $('#redo-btn').addEventListener('click', redo);
+  const nameInput = $('#doc-name');
+  nameInput.value = app.name;
+  nameInput.addEventListener('change', () => { app.name = nameInput.value.trim() || defaultName(); nameInput.value = app.name; saveSoon(); });
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') nameInput.blur(); });
+  $('#file-input').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) loadFromFile(f);
+    e.target.value = '';
+  });
+  window.addEventListener('dragover', (e) => { e.preventDefault(); });
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) loadFromFile(f);
+  });
+  window.addEventListener('resize', requestRender);
+  window.addEventListener('beforeunload', saveLocal);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveLocal(); });
+}
+
+/* ------------------------------------------------------------------ *
+ * Keyboard
+ * ------------------------------------------------------------------ */
+window.addEventListener('keydown', (e) => {
+  if (isTyping(e.target) || $('#help-dialog').open) return;
+  const mod = e.metaKey || e.ctrlKey;
+  const k = e.key.toLowerCase();
+  if (e.code === 'Space') {
+    if (!spaceDown) { spaceDown = true; if (!pointer) setCursor('grab'); }
+    e.preventDefault();
+    return;
+  }
+  if (mod) {
+    if (k === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
+    else if (k === 'y') { e.preventDefault(); redo(); }
+    else if (k === 'a') { e.preventDefault(); selected = new Set(elements.map((x) => x.id)); setTool('selection'); }
+    else if (k === 'd') { e.preventDefault(); duplicateSelection(); }
+    else if (k === 's') { e.preventDefault(); saveToFile(e.shiftKey); }
+    else if (k === 'o') { e.preventDefault(); openFile(); }
+    else if (k === 'e' && e.shiftKey) { e.preventDefault(); exportPng(); }
+    else if (k === '=' || k === '+') { e.preventDefault(); zoomStep(1); }
+    else if (k === '-') { e.preventDefault(); zoomStep(-1); }
+    else if (k === '0') { e.preventDefault(); zoomAt(1, window.innerWidth / 2, window.innerHeight / 2); }
+    else if (e.code === 'BracketRight') { e.preventDefault(); reorder(e.shiftKey ? 'front' : 'forward'); }
+    else if (e.code === 'BracketLeft') { e.preventDefault(); reorder(e.shiftKey ? 'back' : 'backward'); }
+    return;
+  }
+  if (e.altKey && e.shiftKey && e.code === 'KeyD') { e.preventDefault(); toggleTheme(); return; }
+  if (e.shiftKey && e.code === 'Digit1') { e.preventDefault(); zoomToFit(); return; }
+  if (e.altKey) return;
+  const arrows = { arrowleft: [-1, 0], arrowright: [1, 0], arrowup: [0, -1], arrowdown: [0, 1] };
+  if (arrows[k] && selected.size) {
+    e.preventDefault();
+    const step = e.shiftKey ? 10 : 1;
+    nudge(arrows[k][0] * step, arrows[k][1] * step);
+    return;
+  }
+  switch (k) {
+    case 'v': case '1': setTool('selection'); break;
+    case 'h': setTool('hand'); break;
+    case 'r': case '2': setTool('rectangle'); break;
+    case 'd': case '3': setTool('diamond'); break;
+    case 'o': case '4': setTool('ellipse'); break;
+    case 'a': case '5': setTool('arrow'); break;
+    case 't': case '8': setTool('text'); break;
+    case 'q': setToolLocked(!app.toolLocked); break;
+    case '?': $('#help-dialog').showModal(); break;
+    case 'delete': case 'backspace':
+      if (selected.size) { e.preventDefault(); removeElements(new Set(selected)); }
+      break;
+    case 'enter': {
+      const sel = selectedEls();
+      if (sel.length === 1 && (SHAPES.has(sel[0].type) || sel[0].type === 'text')) { e.preventDefault(); startEditing(sel[0]); }
+      break;
+    }
+    case 'escape':
+      closePopovers();
+      if (app.tool !== 'selection') setTool('selection');
+      else { selected = new Set(); onSelectionChange(); requestRender(); }
+      break;
+  }
+});
+window.addEventListener('keyup', (e) => {
+  if (e.code === 'Space') {
+    spaceDown = false;
+    if (!pointer) setCursor(app.tool === 'hand' ? 'grab' : 'default');
+  }
+});
+window.addEventListener('blur', () => { spaceDown = false; });
+
+/* ------------------------------------------------------------------ *
+ * Boot
+ * ------------------------------------------------------------------ */
+loadLocal();
+initUI();
+applyTheme();
+setToolLocked(app.toolLocked);
+syncCanvasSwatches();
+updateZoomLabel();
+setTool('selection');
+history.stack = [JSON.stringify(elements)];
+history.index = 0;
+updateUndoButtons();
+setStatus('saved');
+render();
+if (document.fonts && document.fonts.load) {
+  document.fonts.load(`20px ${HAND_FONT}`).then(() => {
+    wrapCache.clear();
+    for (const el of elements) if (el.type === 'text') measureFreeText(el);
+    requestRender();
+  }).catch(() => {});
+}
+</script>
+</body>
+</html>
