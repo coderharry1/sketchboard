@@ -4,6 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sketchboard</title>
+<meta name="description" content="A free, private, hand-drawn whiteboard. Sketch boxes, connect them with arrows, color them and save — no sign-up, works offline. Built by S. Harish Krishnan, AI Engineer.">
+<meta name="author" content="S. Harish Krishnan">
+<meta name="theme-color" content="#6965db">
+<meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://coderharry1.github.io/sketchboard/">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sketchboard">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sketchboard">
+<meta property="og:title" content="Sketchboard — a free, private, hand-drawn whiteboard">
+<meta property="og:description" content="Sketch boxes, connect them with arrows, color them and save. No sign-up, works offline, Excalidraw-compatible files.">
+<meta property="og:url" content="https://coderharry1.github.io/sketchboard/">
+<meta property="og:image" content="https://coderharry1.github.io/sketchboard/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sketchboard — a free, private, hand-drawn whiteboard">
+<meta name="twitter:description" content="Sketch boxes, connect them with arrows, color them and save. No sign-up, works offline.">
+<meta name="twitter:image" content="https://coderharry1.github.io/sketchboard/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -878,9 +901,18 @@ function measureFreeText(el) {
   el.width = Math.max(1, ...lines.map((l) => measureCtx.measureText(l).width));
   el.height = lines.length * el.fontSize * LINE_HEIGHT;
 }
-/* Grow a box vertically so its label fits. */
+/* Grow a box so its label fits: wide enough for the longest word, tall enough for all lines. */
 function fitLabel(el) {
   if (!el.text) return;
+  measureCtx.font = fontFor(el.fontSize);
+  const longestWord = Math.max(...el.text.split(/\s+/).map((w) => measureCtx.measureText(w).width), 0);
+  const widthFactor = el.type === 'ellipse' ? Math.SQRT2 : el.type === 'diamond' ? 2 : 1;
+  const needW = Math.ceil((longestWord + LABEL_PADDING * 2) * widthFactor);
+  if (el.width < needW && needW < 2000) {
+    el.x -= (needW - el.width) / 2;
+    el.width = needW;
+    touch(el);
+  }
   const lines = wrapLines(el.text, el.fontSize, labelMaxWidth(el));
   const textH = lines.length * el.fontSize * LINE_HEIGHT + LABEL_PADDING * 2;
   const need = el.type === 'ellipse' ? textH * Math.SQRT2 : el.type === 'diamond' ? textH * 2 : textH;
@@ -1176,9 +1208,11 @@ function zoomToFit() {
   if (!elements.length) { app.zoom = 1; app.scrollX = 0; app.scrollY = 0; updateZoomLabel(); requestRender(); return; }
   const b = boundsOfAll(elements);
   const W = window.innerWidth, H = window.innerHeight;
-  const z = clamp(Math.min((W - 160) / Math.max(b.w, 1), (H - 220) / Math.max(b.h, 1)), 0.1, 1);
+  // keep the diagram clear of the properties panel on wide screens
+  const left = !$('#panel').hidden && W >= 760 ? 260 : 0;
+  const z = clamp(Math.min((W - left - 160) / Math.max(b.w, 1), (H - 220) / Math.max(b.h, 1)), 0.1, 1);
   app.zoom = z;
-  app.scrollX = W / 2 / z - (b.x + b.w / 2);
+  app.scrollX = (left + (W - left) / 2) / z - (b.x + b.w / 2);
   app.scrollY = H / 2 / z - (b.y + b.h / 2);
   updateZoomLabel();
   requestRender();
@@ -2451,6 +2485,10 @@ history.index = 0;
 updateUndoButtons();
 setStatus('saved');
 render();
+// Offline support and "Install app" when served over http(s); opening the file directly skips this.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 if (document.fonts && document.fonts.load) {
   document.fonts.load(`20px ${HAND_FONT}`).then(() => {
     wrapCache.clear();

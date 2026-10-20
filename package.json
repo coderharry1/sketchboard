@@ -1,0 +1,17 @@
+{
+  "name": "sketchboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A free, private, hand-drawn whiteboard. Built by S. Harish Krishnan, AI Engineer.",
+  "author": "S. Harish Krishnan",
+  "scripts": {
+    "build": "python3 build.py",
+    "check:build": "python3 build.py && git diff --exit-code -- index.html Sketchboard.html",
+    "test": "playwright test",
+    "assets": "node scripts/make-assets.mjs",
+    "serve": "python3 -m http.server 4173"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
